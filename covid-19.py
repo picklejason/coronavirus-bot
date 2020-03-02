@@ -16,7 +16,7 @@ async def help(ctx):
 
     embed = discord.Embed(
         title='Bot Help',
-        colour=discord.Colour.purple()
+        colour=discord.Colour.red()
     )
     embed.add_field(name='```.c stat```', value='Returns **Total Confirmed**, **Total Deaths**, and **Total Recovered** \n \n To see stats of all locations use ```.c stat "all"``` \n To see stats of locations other than China use ```.c stat "other"``` \n To see stats of a specific country use ```.c stat "country name"```', inline=False)
     embed.add_field(name = 'Dataset from', value = '[John Hopkins University Github](https://github.com/CSSEGISandData/COVID-19)')
@@ -46,39 +46,101 @@ async def stat(ctx, location : str ):
 
     updated = list(confirmed_df)[-1]
 
-    index = {'confirmed': confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-1].sum(),
-    'deaths': deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-1].sum(),
-    'recovered': recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-1].sum(),
+    confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
+    prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
+    change_confirmed = confirmed - prev_confirmed
+    if (change_confirmed > 0):
+        change_confirmed = f'(+{change_confirmed})'
+    else:
+        change_confirmed = ''
 
-    'aConfirmed': confirmed_df.iloc[:,-1].sum(),
-    'aDeaths': deaths_df.iloc[:,-1].sum(),
-    'aRecovered': recovered_df.iloc[:,-1].sum(),
+    deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
+    prev_deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
+    change_deaths = deaths - prev_deaths
+    if (change_deaths > 0):
+        change_deaths = f'(+{change_deaths})'
+    else:
+        change_deaths = ''
 
-    'oConfirmed': confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum(),
-    'oDeaths': deaths_df[~deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum(),
-    'oRecovered': recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
-    }
+    recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
+    prev_recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
+    change_recovered = recovered - prev_recovered
+    if (change_recovered > 0):
+        change_recovered = f'(+{change_recovered})'
+    else:
+        change_recovered = ''
+
+    all_confirmed = confirmed_df.iloc[:,-1].sum()
+    prev_all_confirmed = confirmed_df.iloc[:,-2].sum()
+    change_all_confirmed = all_confirmed - prev_all_confirmed
+    if (change_all_confirmed > 0):
+        change_all_confirmed = f'(+{change_all_confirmed})'
+    else:
+        change_all_confirmed = ''
+
+    all_deaths = deaths_df.iloc[:,-1].sum()
+    prev_all_deaths = deaths_df.iloc[:,-2].sum()
+    change_all_deaths = all_deaths - prev_all_deaths
+    if (change_all_deaths > 0):
+        change_all_deaths = f'(+{change_all_deaths})'
+    else:
+        change_all_deaths = ''
+
+    all_recovered = recovered_df.iloc[:,-1].sum()
+    prev_all_recovered = recovered_df.iloc[:,-2].sum()
+    change_all_recovered = all_recovered - prev_all_recovered
+    if (change_all_recovered > 0):
+        change_all_recovered = f'(+{change_all_recovered})'
+    else:
+        change_all_recovered = ''
+
+    other_confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+    prev_other_confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
+    change_other_confirmed = other_confirmed - prev_other_confirmed
+    if (change_other_confirmed > 0):
+        change_other_confirmed = f'(+{change_other_confirmed})'
+    else:
+        change_other_confirmed = ''
+
+    other_deaths = deaths_df[~deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+    prev_other_deaths = deaths_df[~deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
+    change_other_deaths = other_deaths - prev_other_deaths
+    if (change_other_deaths > 0):
+        change_other_deaths = f'(+{change_other_deaths})'
+    else:
+        change_other_confirmed = ''
+
+    other_recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+    prev_other_recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
+    change_other_recovered = other_recovered - prev_other_recovered
+    if (change_other_recovered > 0):
+        change_other_recovered = f'(+{change_other_recovered})'
+    else:
+        change_other_confirmed = ''
 
     if any(confirmed_df['Country/Region'].str.contains(location)) or location == 'All' or location == 'Other':
 
         embed = discord.Embed(
-            title=f'Coronavirus COVID-19 {location} Cases ',
-            colour=discord.Colour.purple()
+            title=f'Coronavirus COVID-19 {location} Cases',
+            description='Data from [John Hopkins University Github](https://github.com/CSSEGISandData/COVID-19)',
+            colour=discord.Colour.red()
         )
         if location == 'All':
-            embed.add_field(name='Confirmed', value=index['aConfirmed'])
-            embed.add_field(name='Deaths', value=index['aDeaths'])
-            embed.add_field(name='Recovered', value=index['aRecovered'])
+            embed.add_field(name='Confirmed', value=f'**{all_confirmed}** {change_all_confirmed}')
+            embed.add_field(name='Deaths', value=f'**{all_deaths}** {change_all_deaths}')
+            embed.add_field(name='Recovered', value=f'**{all_recovered}** {change_all_recovered}')
+            embed.add_field(name='Mortality Rate', value=f'**{round((all_deaths/all_confirmed * 100),2)}%**')
         elif location == 'Other':
-            embed.add_field(name='Confirmed', value=index['oConfirmed'])
-            embed.add_field(name='Deaths', value=index['oDeaths'])
-            embed.add_field(name='Recovered', value=index['oRecovered'])
+            embed.add_field(name='Confirmed', value=f'**{other_confirmed}** {change_other_confirmed}')
+            embed.add_field(name='Deaths', value=f'**{other_deaths}** {change_other_deaths}')
+            embed.add_field(name='Recovered', value=f'**{other_recovered}** {change_other_recovered}')
+            embed.add_field(name='Mortality Rate', value=f'**{round((other_deaths/other_confirmed * 100),2)}%**')
         else:
-            embed.add_field(name='Confirmed', value=index['confirmed'])
-            embed.add_field(name='Deaths', value=index['deaths'])
-            embed.add_field(name='Recovered', value=index['recovered'])
+            embed.add_field(name='Confirmed', value= f'**{confirmed}** {change_confirmed}')
+            embed.add_field(name='Deaths', value=f'**{deaths}** {change_deaths}')
+            embed.add_field(name='Recovered', value=f'**{recovered}** {change_recovered}')
+            embed.add_field(name='Mortality Rate', value=f'**{round((deaths/confirmed * 100),2)}%**')
 
-        embed.add_field(name = 'Dataset from', value = '[John Hopkins University Github](https://github.com/CSSEGISandData/COVID-19)', inline=False)
         embed.set_footer(text= f'Updated {updated}')
 
         await ctx.send(embed=embed)
