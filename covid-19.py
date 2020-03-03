@@ -46,77 +46,46 @@ async def stat(ctx, location : str ):
 
     updated = list(confirmed_df)[-1]
 
-    confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
-    prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
+    if location == 'All':
+        confirmed = confirmed_df.iloc[:,-1].sum()
+        prev_confirmed = confirmed_df.iloc[:,-2].sum()
+        deaths = deaths_df.iloc[:,-1].sum()
+        prev_deaths = deaths_df.iloc[:,-2].sum()
+        recovered = recovered_df.iloc[:,-1].sum()
+        prev_recovered = recovered_df.iloc[:,-2].sum()
+    elif location == 'Other':
+        confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+        prev_confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
+        deaths = deaths_df[~deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+        prev_deaths = deaths_df[~deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
+        recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+        prev_recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
+    else:
+        confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
+        prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
+        deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
+        prev_deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
+        recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
+        prev_recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
+
+
     change_confirmed = confirmed - prev_confirmed
     if (change_confirmed > 0):
         change_confirmed = f'(+{change_confirmed})'
     else:
         change_confirmed = ''
 
-    deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
-    prev_deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
     change_deaths = deaths - prev_deaths
     if (change_deaths > 0):
         change_deaths = f'(+{change_deaths})'
     else:
         change_deaths = ''
 
-    recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
-    prev_recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
     change_recovered = recovered - prev_recovered
     if (change_recovered > 0):
         change_recovered = f'(+{change_recovered})'
     else:
         change_recovered = ''
-
-    all_confirmed = confirmed_df.iloc[:,-1].sum()
-    prev_all_confirmed = confirmed_df.iloc[:,-2].sum()
-    change_all_confirmed = all_confirmed - prev_all_confirmed
-    if (change_all_confirmed > 0):
-        change_all_confirmed = f'(+{change_all_confirmed})'
-    else:
-        change_all_confirmed = ''
-
-    all_deaths = deaths_df.iloc[:,-1].sum()
-    prev_all_deaths = deaths_df.iloc[:,-2].sum()
-    change_all_deaths = all_deaths - prev_all_deaths
-    if (change_all_deaths > 0):
-        change_all_deaths = f'(+{change_all_deaths})'
-    else:
-        change_all_deaths = ''
-
-    all_recovered = recovered_df.iloc[:,-1].sum()
-    prev_all_recovered = recovered_df.iloc[:,-2].sum()
-    change_all_recovered = all_recovered - prev_all_recovered
-    if (change_all_recovered > 0):
-        change_all_recovered = f'(+{change_all_recovered})'
-    else:
-        change_all_recovered = ''
-
-    other_confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
-    prev_other_confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
-    change_other_confirmed = other_confirmed - prev_other_confirmed
-    if (change_other_confirmed > 0):
-        change_other_confirmed = f'(+{change_other_confirmed})'
-    else:
-        change_other_confirmed = ''
-
-    other_deaths = deaths_df[~deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
-    prev_other_deaths = deaths_df[~deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
-    change_other_deaths = other_deaths - prev_other_deaths
-    if (change_other_deaths > 0):
-        change_other_deaths = f'(+{change_other_deaths})'
-    else:
-        change_other_confirmed = ''
-
-    other_recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
-    prev_other_recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
-    change_other_recovered = other_recovered - prev_other_recovered
-    if (change_other_recovered > 0):
-        change_other_recovered = f'(+{change_other_recovered})'
-    else:
-        change_other_confirmed = ''
 
     if any(confirmed_df['Country/Region'].str.contains(location)) or location == 'All' or location == 'Other':
 
@@ -125,22 +94,11 @@ async def stat(ctx, location : str ):
             description='Data from [John Hopkins University Github](https://github.com/CSSEGISandData/COVID-19)',
             colour=discord.Colour.red()
         )
-        if location == 'All':
-            embed.add_field(name='Confirmed', value=f'**{all_confirmed}** {change_all_confirmed}')
-            embed.add_field(name='Deaths', value=f'**{all_deaths}** {change_all_deaths}')
-            embed.add_field(name='Recovered', value=f'**{all_recovered}** {change_all_recovered}')
-            embed.add_field(name='Mortality Rate', value=f'**{round((all_deaths/all_confirmed * 100),2)}%**')
-        elif location == 'Other':
-            embed.add_field(name='Confirmed', value=f'**{other_confirmed}** {change_other_confirmed}')
-            embed.add_field(name='Deaths', value=f'**{other_deaths}** {change_other_deaths}')
-            embed.add_field(name='Recovered', value=f'**{other_recovered}** {change_other_recovered}')
-            embed.add_field(name='Mortality Rate', value=f'**{round((other_deaths/other_confirmed * 100),2)}%**')
-        else:
-            embed.add_field(name='Confirmed', value= f'**{confirmed}** {change_confirmed}')
-            embed.add_field(name='Deaths', value=f'**{deaths}** {change_deaths}')
-            embed.add_field(name='Recovered', value=f'**{recovered}** {change_recovered}')
-            embed.add_field(name='Mortality Rate', value=f'**{round((deaths/confirmed * 100),2)}%**')
 
+        embed.add_field(name='Confirmed', value= f'**{confirmed}** {change_confirmed}')
+        embed.add_field(name='Deaths', value=f'**{deaths}** {change_deaths}')
+        embed.add_field(name='Recovered', value=f'**{recovered}** {change_recovered}')
+        embed.add_field(name='Mortality Rate', value=f'**{round((deaths/confirmed * 100),2)}%**')
         embed.set_footer(text= f'Updated {updated}')
 
         await ctx.send(embed=embed)
