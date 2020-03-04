@@ -38,9 +38,10 @@ async def help(ctx):
         title='Bot Help',
         colour=discord.Colour.red()
     )
-    embed.add_field(name='```.c stat```', value='Returns **Total Confirmed**, **Total Deaths**, and **Total Recovered** \n \n To see stats of all locations use ```.c stat "all"``` \n To see stats of locations other than China use ```.c stat "other"``` \n To see stats of a specific country use ```.c stat "country name"```', inline=False)
+    embed.add_field(name='```.c stat [location]```', value='*Returns **Total Confirmed**, **Total Deaths**, and **Total Recovered** of given location* \n __[location]__ \n "all" = stats of all locations \n "other" = stats of locations other than China \n "country name" = stats of a specific country \n (United States is abbreviated to **US** and United Kingdom is abbreviated to **UK**)', inline=False)
+    embed.add_field(name='```.c reddit [category]```', value='*Returns 5 posts of given category from [r/Coronavirus](https://www.reddit.com/r/Coronavirus/)* \n __[category]__ \n "Hot" | "New" | "Top"', inline=False)
     embed.add_field(name = 'Dataset from', value = '[Johns Hopkins CSSE Github](https://github.com/CSSEGISandData/COVID-19)')
-    embed.add_field(name='Bot Source Code', value='[Github](https://github.com/picklejason/coronavirus-bot)')
+    embed.add_field(name='Bot Source Code', value='[Github](https://github.com/picklejason/coronavirus-bot)') #If you self host this bot or use any part of this source code, I would be grateful if you leave this in or credit me somewhere else
 
     await ctx.send(embed=embed)
 
