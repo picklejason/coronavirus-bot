@@ -5,15 +5,32 @@ import os
 import matplotlib.pyplot as plt
 import io
 from discord import File
+import praw
+from datetime import datetime
+#import config
 
 client = commands.Bot(command_prefix = '.c ')
 client.remove_command('help')
+
+# r = praw.Reddit(client_id=config.redditID,
+#                 client_secret=config.redditSecret,
+#                 password=config.redditPW,
+#                 user_agent=config.user_agent,
+#                 username=config.redditName)
+
+#Heroku
+r = praw.Reddit(client_id=os.environ['REDDITID'],
+                client_secret=os.environ['REDDITSECRET'],
+                password=os.environ['REDDITPW'],
+                user_agent=os.environ['USER_AGENT'],
+                username=os.environ['REDDITNAME'])
 
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Game(name='.c help'))
     print('Bot is online.')
 
+#Help Command
 @client.command()
 async def help(ctx):
 
@@ -27,10 +44,33 @@ async def help(ctx):
 
     await ctx.send(embed=embed)
 
+#Reddit Command | Returns 5 posts (Hot, New, Top) from the subreddit r/Coronavirus
 @client.command()
-async def clear(ctx, amount : int):
-    await ctx.channel.purge(limit=amount+1)
+async def reddit(ctx, category = 'Hot', number : int = 5):
+    category = category.title()
 
+    if category == 'Hot':
+        submissions = r.subreddit('Coronavirus').hot(limit=5)
+    elif category == 'New':
+        submissions = r.subreddit('Coronavirus').new(limit=5)
+    elif category == 'Top':
+        submissions = r.subreddit('Coronavirus').top(limit=5)
+    else:
+        await ctx.send('Please enter one of the following categories: Hot, New, Top')
+
+    description = f'{category} posts'
+    timestamp = datetime.utcnow()
+    url = 'https://www.reddit.com/r/Coronavirus/'
+    embed = discord.Embed(title='/r/Coronavirus', description=description, colour=discord.Colour.red(), timestamp=timestamp, url=url)
+
+    for s in submissions:
+        embed.add_field(name=f'u/{s.author}', value=f'[{s.title}](https://www.reddit.com{s.permalink})', inline=False)
+
+    embed.set_thumbnail(url='https://styles.redditmedia.com/t5_2x4yx/styles/communityIcon_ex5aikhvi3i41.png')
+
+    await ctx.send(embed=embed)
+
+#Statistics Command | Provides Confirmed, Deaths, and Recovered | Mortality Rate: Deaths/Confirmed | Includes Graph
 @client.command()
 async def stat(ctx, location : str ):
 
@@ -47,12 +87,14 @@ async def stat(ctx, location : str ):
     deaths_df = pd.read_csv(deaths_url, error_bad_lines=False)
     recovered_df = pd.read_csv(recovered_url, error_bad_lines=False)
 
+    #Check if data exists for location
     if any(confirmed_df['Country/Region'].str.contains(location)) or location == 'All' or location == 'Other':
 
         updated = list(confirmed_df)[-1]
         plt.style.use('dark_background')
         fig = plt.figure(dpi=200)
 
+        #Parse Data
         if location == 'All':
             confirmed = confirmed_df.iloc[:,-1].sum()
             prev_confirmed = confirmed_df.iloc[:,-2].sum()
@@ -62,6 +104,7 @@ async def stat(ctx, location : str ):
             prev_recovered = recovered_df.iloc[:,-2].sum()
             ax = confirmed_df.iloc[:,4:].sum().plot(label='Confirmed')
             ax = recovered_df.iloc[:,4:].sum().plot(label='Recovered')
+
         elif location == 'Other':
             confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
             prev_confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
@@ -71,6 +114,7 @@ async def stat(ctx, location : str ):
             prev_recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
             ax = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Confirmed')
             ax = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Recovered')
+
         else:
             confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
             prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
@@ -81,6 +125,7 @@ async def stat(ctx, location : str ):
             ax = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,4:].sum().plot(label='Confirmed')
             ax = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,4:].sum().plot(label='Recovered')
 
+        #Check if change is postive | adds "+" before change
         change_confirmed = confirmed - prev_confirmed
         if (change_confirmed > 0):
             change_confirmed = f'(+{change_confirmed})'
@@ -99,6 +144,7 @@ async def stat(ctx, location : str ):
         else:
             change_recovered = ''
 
+        #Graph
         ax.yaxis.grid()
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
@@ -116,6 +162,7 @@ async def stat(ctx, location : str ):
 
         plt.yticks(locs, ylabels)
 
+        #Save graph to tmp folder
         filename = 'tmp\\' + location + '_graph.png'
         plt.savefig(filename, transparent=True)
         plt.close(fig)
@@ -143,6 +190,6 @@ async def stat(ctx, location : str ):
         await ctx.send('There is no available data for this location')
 
 if __name__ == '__main__':
-    # import config
     # client.run(config.token)
-    client.run(os.environ['TOKEN']) #Heroku
+    #Heroku
+    client.run(os.environ['TOKEN'])
