@@ -12,14 +12,14 @@ from datetime import datetime
 client = commands.Bot(command_prefix = '.c ')
 client.remove_command('help')
 
-# r = praw.Reddit(client_id=config.redditID,
+# red = praw.Reddit(client_id=config.redditID,
 #                 client_secret=config.redditSecret,
 #                 password=config.redditPW,
 #                 user_agent=config.user_agent,
 #                 username=config.redditName)
 
 #Heroku
-r = praw.Reddit(client_id=os.environ['REDDITID'],
+red = praw.Reddit(client_id=os.environ['REDDITID'],
                 client_secret=os.environ['REDDITSECRET'],
                 password=os.environ['REDDITPW'],
                 user_agent=os.environ['USER_AGENT'],
@@ -36,14 +36,29 @@ async def help(ctx):
 
     embed = discord.Embed(
         title='Bot Help',
+        description='Documentation for all commands | Data from [Johns Hopkins CSSE Github](https://github.com/CSSEGISandData/COVID-19)',
         colour=discord.Colour.red()
     )
-    embed.add_field(name='```.c stat [location]```', value='*Returns **Total Confirmed**, **Total Deaths**, and **Total Recovered** of given location* \n __[location]__ \n "all" = stats of all locations \n "other" = stats of locations other than China \n "country name" = stats of a specific country \n (United States is abbreviated to **US** and United Kingdom is abbreviated to **UK**)', inline=False)
-    embed.add_field(name='```.c reddit [category]```', value='*Returns 5 posts of given category from [r/Coronavirus](https://www.reddit.com/r/Coronavirus/)* \n __[category]__ \n "Hot" | "New" | "Top"', inline=False)
-    embed.add_field(name = 'Dataset from', value = '[Johns Hopkins CSSE Github](https://github.com/CSSEGISandData/COVID-19)')
+    embed.add_field(name='```.c stat [location]```', value='Return **Total Confirmed**, **Total Deaths**, and **Total Recovered** of given location \n __[location]__ \n "all" = stats of all locations \n "other" = stats of locations other than China \n "country name" = stats of a specific country \n (United States is abbreviated to **US** and United Kingdom is abbreviated to **UK**)', inline=False)
+    embed.add_field(name='```.c reddit [category]```', value='Return posts of given category from [r/Coronavirus](https://www.reddit.com/r/Coronavirus/) \n Shows 5 posts at a time (up to 50 most recent) Use ⏪ and ⏩ to scroll through \n __[category]__ \n "Hot" | "New" | "Top"', inline=False)
     embed.add_field(name='Bot Source Code', value='[Github](https://github.com/picklejason/coronavirus-bot)') #If you self host this bot or use any part of this source code, I would be grateful if you leave this in or credit me somewhere else
 
     await ctx.send(embed=embed)
+
+left = '⏪'
+right = '⏩'
+
+def predicate(message, l, r):
+    def check(reaction, user):
+        if reaction.message.id != message.id or user == client.user:
+            return False
+        if l and reaction.emoji == left:
+            return True
+        if r and reaction.emoji == right:
+            return True
+        return False
+
+    return check
 
 #Reddit Command | Returns 5 posts (Hot, New, Top) from the subreddit r/Coronavirus
 @client.command()
@@ -51,11 +66,11 @@ async def reddit(ctx, category = 'Hot', number : int = 5):
     category = category.title()
 
     if category == 'Hot':
-        submissions = r.subreddit('Coronavirus').hot(limit=5)
+        submissions = list(red.subreddit('Coronavirus').hot(limit=50))[number-5:number]
     elif category == 'New':
-        submissions = r.subreddit('Coronavirus').new(limit=5)
+        submissions = list(red.subreddit('Coronavirus').new(limit=50))[number-5:number]
     elif category == 'Top':
-        submissions = r.subreddit('Coronavirus').top(limit=5)
+        submissions = list(red.subreddit('Coronavirus').top(limit=50))[number-5:number]
     else:
         await ctx.send('Please enter one of the following categories: Hot, New, Top')
 
@@ -65,11 +80,43 @@ async def reddit(ctx, category = 'Hot', number : int = 5):
     embed = discord.Embed(title='/r/Coronavirus', description=description, colour=discord.Colour.red(), timestamp=timestamp, url=url)
 
     for s in submissions:
-        embed.add_field(name=f'u/{s.author}', value=f'[{s.title}](https://www.reddit.com{s.permalink})', inline=False)
+        embed.add_field(name=f':small_red_triangle:{s.score} | Posted by u/{s.author} on {datetime.fromtimestamp(s.created).strftime("%m/%d/%y %H:%M:%S")}', value=f'[{s.title}](https://www.reddit.com{s.permalink})', inline=False)
 
     embed.set_thumbnail(url='https://styles.redditmedia.com/t5_2x4yx/styles/communityIcon_ex5aikhvi3i41.png')
+    embed.set_footer(text='Page 1 of 10')
+    msg = await ctx.send(embed=embed)
 
-    await ctx.send(embed=embed)
+    index = 1
+    while True:
+        l = index != 1
+        r = index != 10
+        if l:
+            await msg.add_reaction(left)
+        if r:
+            await msg.add_reaction(right)
+        react, user = await client.wait_for('reaction_add', check=predicate(msg, l, r))
+        if react.emoji == left:
+            index -= 1
+            number -= 5
+            await msg.remove_reaction(left, user)
+
+        elif react.emoji == right:
+            index += 1
+            number += 5
+            await msg.remove_reaction(right, user)
+        embed.clear_fields()
+        if category == 'Hot':
+            submissions = list(red.subreddit('Coronavirus').hot(limit=50))[number-5:number]
+        elif category == 'New':
+            submissions = list(red.subreddit('Coronavirus').new(limit=50))[number-5:number]
+        elif category == 'Top':
+            submissions = list(red.subreddit('Coronavirus').top(limit=50))[number-5:number]
+
+        for s in submissions:
+            embed.add_field(name=f':small_red_triangle:{s.score} | Posted by u/{s.author} on {datetime.fromtimestamp(s.created).strftime("%m/%d/%y %H:%M:%S")}', value=f'[{s.title}](https://www.reddit.com{s.permalink})', inline=False)
+
+        embed.set_footer(text=f'Page {index} of 10')
+        await msg.edit(embed=embed)
 
 #Statistics Command | Provides Confirmed, Deaths, and Recovered | Mortality Rate: Deaths/Confirmed | Includes Graph
 @client.command()
