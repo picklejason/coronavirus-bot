@@ -62,17 +62,21 @@ def predicate(message, l, r):
 
 #Reddit Command | Returns 5 posts (Hot, New, Top) from the subreddit r/Coronavirus
 @client.command()
-async def reddit(ctx, category = 'Hot', number : int = 5):
+async def reddit(ctx, category = 'Hot'):
+
     category = category.title()
 
     if category == 'Hot':
-        submissions = list(red.subreddit('Coronavirus').hot(limit=50))[number-5:number]
+        submissions = list(red.subreddit('Coronavirus').hot(limit=5))
     elif category == 'New':
-        submissions = list(red.subreddit('Coronavirus').new(limit=50))[number-5:number]
+        submissions = list(red.subreddit('Coronavirus').new(limit=5))
     elif category == 'Top':
-        submissions = list(red.subreddit('Coronavirus').top(limit=50))[number-5:number]
+        submissions = list(red.subreddit('Coronavirus').top(limit=5))
     else:
         await ctx.send('Please enter one of the following categories: Hot, New, Top')
+        return
+
+    index = 1
 
     description = f'{category} posts'
     timestamp = datetime.utcnow()
@@ -83,28 +87,35 @@ async def reddit(ctx, category = 'Hot', number : int = 5):
         embed.add_field(name=f':small_red_triangle:{s.score} | Posted by u/{s.author} on {datetime.fromtimestamp(s.created).strftime("%m/%d/%y %H:%M:%S")}', value=f'[{s.title}](https://www.reddit.com{s.permalink})', inline=False)
 
     embed.set_thumbnail(url='https://styles.redditmedia.com/t5_2x4yx/styles/communityIcon_ex5aikhvi3i41.png')
-    embed.set_footer(text='Page 1 of 10')
+    embed.set_footer(text=f'Page {index} of 10')
     msg = await ctx.send(embed=embed)
 
-    index = 1
     while True:
         l = index != 1
         r = index != 10
+
         if l:
             await msg.add_reaction(left)
+        else:
+            await msg.remove_reaction(left, msg.author)
         if r:
             await msg.add_reaction(right)
+        else:
+            await msg.remove_reaction(right, msg.author)
+
         react, user = await client.wait_for('reaction_add', check=predicate(msg, l, r))
         if react.emoji == left:
             index -= 1
-            number -= 5
             await msg.remove_reaction(left, user)
 
         elif react.emoji == right:
             index += 1
-            number += 5
             await msg.remove_reaction(right, user)
+
         embed.clear_fields()
+
+        number = index * 5
+
         if category == 'Hot':
             submissions = list(red.subreddit('Coronavirus').hot(limit=50))[number-5:number]
         elif category == 'New':
