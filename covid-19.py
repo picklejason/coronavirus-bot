@@ -131,12 +131,17 @@ async def reddit(ctx, category = 'Hot'):
 
 #Statistics Command | Provides Confirmed, Deaths, and Recovered | Mortality Rate: Deaths/Confirmed | Includes Graph
 @client.command()
-async def stat(ctx, location : str ):
+async def stat(ctx, location : str, provst = ''):
 
     if len(location) == 2:
         location = location.upper()
     else:
         location = location.title()
+
+    if len(provst) == 2:
+        provst = provst.upper()
+    else:
+        provst = provst.title()
 
     confirmed_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv'
     deaths_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Deaths.csv'
@@ -175,14 +180,24 @@ async def stat(ctx, location : str ):
             ax = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Recovered')
 
         else:
-            confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
-            prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
-            deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
-            prev_deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
-            recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
-            prev_recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
-            ax = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,4:].sum().plot(label='Confirmed')
-            ax = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,4:].sum().plot(label='Recovered')
+            if provst:
+                confirmed = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
+                prev_confirmed = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
+                deaths = deaths_df[deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
+                prev_deaths = deaths_df[deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
+                recovered = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
+                prev_recovered = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
+                ax = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed')
+                ax = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered')
+            else:
+                confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
+                prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
+                deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
+                prev_deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
+                recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
+                prev_recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
+                ax = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,4:].sum().plot(label='Confirmed')
+                ax = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,4:].sum().plot(label='Recovered')
 
         #Check if change is postive | adds "+" before change
         change_confirmed = confirmed - prev_confirmed
@@ -232,7 +247,7 @@ async def stat(ctx, location : str ):
         image = discord.File(file, filename='graph.png')
 
         embed = discord.Embed(
-            title=f'Coronavirus COVID-19 {location} Cases',
+            title=f'Coronavirus COVID-19 {location} {provst} Cases',
             description='Data from [Johns Hopkins CSSE Github](https://github.com/CSSEGISandData/COVID-19)',
             colour=discord.Colour.red()
         )
