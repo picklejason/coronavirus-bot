@@ -30,6 +30,11 @@ async def on_ready():
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{len(client.guilds)} servers | .c help'))
     print('Bot is online.')
 
+@client.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.send('Invalid command | Use `.c help` to see available commands and how to use them')
+
 #Help Command
 @client.command()
 async def help(ctx):
@@ -140,7 +145,7 @@ async def stat(ctx, location : str, provst = ''):
         location = location.title()
 
     if len(provst) == 2:
-        provst = provst.upper()
+        provst = ', ' + provst.upper()
     else:
         provst = provst.title()
 
@@ -191,14 +196,14 @@ async def stat(ctx, location : str, provst = ''):
                 ax = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed')
                 ax = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered')
             else:
-                confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
-                prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
-                deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
-                prev_deaths = deaths_df[deaths_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
-                recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-1].sum()
-                prev_recovered = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,-2].sum()
-                ax = confirmed_df[confirmed_df['Country/Region'].str.contains(location)].iloc[:,4:].sum().plot(label='Confirmed')
-                ax = recovered_df[recovered_df['Country/Region'].str.contains(location)].iloc[:,4:].sum().plot(label='Recovered')
+                confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
+                prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
+                deaths = deaths_df[deaths_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
+                prev_deaths = deaths_df[deaths_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
+                recovered = recovered_df[recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
+                prev_recovered = recovered_df[recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
+                ax = confirmed_df[confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed')
+                ax = recovered_df[recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Recovered')
 
         #Check if change is postive | adds "+" before change
         change_confirmed = confirmed - prev_confirmed
@@ -218,6 +223,11 @@ async def stat(ctx, location : str, provst = ''):
             change_recovered = f'(+{int(change_recovered)})'
         else:
             change_recovered = ''
+
+        if confirmed == 0 or deaths == 0:
+            mortality_rate = 0
+        else:
+            mortality_rate = round((deaths/confirmed * 100), 2)
 
         #Graph
         ax.yaxis.grid()
@@ -248,7 +258,7 @@ async def stat(ctx, location : str, provst = ''):
         image = discord.File(file, filename='graph.png')
 
         embed = discord.Embed(
-            title=f'Coronavirus COVID-19 {location} {provst} Cases',
+            title=f'Coronavirus COVID-19 Cases | {location} {provst}',
             description='Data from [Johns Hopkins CSSE Github](https://github.com/CSSEGISandData/COVID-19)',
             colour=discord.Colour.red()
         )
@@ -256,7 +266,7 @@ async def stat(ctx, location : str, provst = ''):
         embed.add_field(name='Confirmed', value= f'**{int(confirmed)}** {change_confirmed}')
         embed.add_field(name='Deaths', value=f'**{int(deaths)}** {change_deaths}')
         embed.add_field(name='Recovered', value=f'**{int(recovered)}** {change_recovered}')
-        embed.add_field(name='Mortality Rate', value=f'**{round((deaths/confirmed * 100),2)}%**')
+        embed.add_field(name='Mortality Rate', value=f'**{mortality_rate}%**')
         embed.set_footer(text= f'Updated {updated}')
 
         await ctx.send(file=image, embed=embed)
