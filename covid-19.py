@@ -27,7 +27,7 @@ red = praw.Reddit(client_id=os.environ['REDDITID'],
 
 @client.event
 async def on_ready():
-    await client.change_presence(activity=discord.Game(name='.c help'))
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{len(client.guilds)} servers | .c help'))
     print('Bot is online.')
 
 #Help Command
@@ -39,9 +39,10 @@ async def help(ctx):
         description='Documentation for all commands | Data from [Johns Hopkins CSSE Github](https://github.com/CSSEGISandData/COVID-19)',
         colour=discord.Colour.red()
     )
-    embed.add_field(name='```.c stat [location]```', value='Return **Total Confirmed**, **Total Deaths**, and **Total Recovered** of given location \n __[location]__ \n "all" = stats of all locations \n "other" = stats of locations other than China \n "country name" = stats of a specific country \n (United States is abbreviated to **US** and United Kingdom is abbreviated to **UK**)', inline=False)
+    embed.add_field(name='```.c stat [location]```', value='Return **Total Confirmed**, **Total Deaths**, and **Total Recovered** of given location along with a graph \n __[location]__ \n "all" = stats of all locations \n "other" = stats of locations other than China \n "country name" = stats of a specific country \n *(United States is abbreviated to **US** and United Kingdom is abbreviated to **UK**)* \n If you would like stats on a specific province or state (abbreviated), put it after the country name. \n Example: **.c stat US CA** - shows the stats of the state of California', inline=False)
     embed.add_field(name='```.c reddit [category]```', value='Return posts of given category from [r/Coronavirus](https://www.reddit.com/r/Coronavirus/) \n Shows 5 posts at a time (up to 50 most recent) Use ⏪ and ⏩ to scroll through \n __[category]__ \n "Hot" | "New" | "Top"', inline=False)
     embed.add_field(name='Bot Source Code', value='[Github](https://github.com/picklejason/coronavirus-bot)') #If you self host this bot or use any part of this source code, I would be grateful if you leave this in or credit me somewhere else
+    embed.add_field(name='Bot Invite', value='[Link](https://discordapp.com/api/oauth2/authorize?client_id=683462722368700526&permissions=0&scope=bot)')
 
     await ctx.send(embed=embed)
 
@@ -202,19 +203,19 @@ async def stat(ctx, location : str, provst = ''):
         #Check if change is postive | adds "+" before change
         change_confirmed = confirmed - prev_confirmed
         if (change_confirmed > 0):
-            change_confirmed = f'(+{change_confirmed})'
+            change_confirmed = f'(+{int(change_confirmed)})'
         else:
             change_confirmed = ''
 
         change_deaths = deaths - prev_deaths
         if (change_deaths > 0):
-            change_deaths = f'(+{change_deaths})'
+            change_deaths = f'(+{int(change_deaths)})'
         else:
             change_deaths = ''
 
         change_recovered = recovered - prev_recovered
         if (change_recovered > 0):
-            change_recovered = f'(+{change_recovered})'
+            change_recovered = f'(+{int(change_recovered)})'
         else:
             change_recovered = ''
 
@@ -252,9 +253,9 @@ async def stat(ctx, location : str, provst = ''):
             colour=discord.Colour.red()
         )
         embed.set_image(url=f'attachment://graph.png')
-        embed.add_field(name='Confirmed', value= f'**{confirmed}** {change_confirmed}')
-        embed.add_field(name='Deaths', value=f'**{deaths}** {change_deaths}')
-        embed.add_field(name='Recovered', value=f'**{recovered}** {change_recovered}')
+        embed.add_field(name='Confirmed', value= f'**{int(confirmed)}** {change_confirmed}')
+        embed.add_field(name='Deaths', value=f'**{int(deaths)}** {change_deaths}')
+        embed.add_field(name='Recovered', value=f'**{int(recovered)}** {change_recovered}')
         embed.add_field(name='Mortality Rate', value=f'**{round((deaths/confirmed * 100),2)}%**')
         embed.set_footer(text= f'Updated {updated}')
 
