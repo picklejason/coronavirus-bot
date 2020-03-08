@@ -7,11 +7,9 @@ import io
 from discord import File
 import praw
 from datetime import datetime
-#import config
 
-client = commands.Bot(command_prefix = '.c ')
-client.remove_command('help')
-
+#Local
+# import config
 # red = praw.Reddit(client_id=config.redditID,
 #                 client_secret=config.redditSecret,
 #                 password=config.redditPW,
@@ -24,6 +22,9 @@ red = praw.Reddit(client_id=os.environ['REDDITID'],
                 password=os.environ['REDDITPW'],
                 user_agent=os.environ['USER_AGENT'],
                 username=os.environ['REDDITNAME'])
+
+client = commands.Bot(command_prefix = '.c ')
+client.remove_command('help')
 
 @client.event
 async def on_ready():
@@ -41,7 +42,7 @@ async def help(ctx):
 
     embed = discord.Embed(
         title='Bot Help',
-        description='Documentation for all commands | Data from [Johns Hopkins CSSE Github](https://github.com/CSSEGISandData/COVID-19)',
+        description='Documentation for all commands | Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE',
         colour=discord.Colour.red()
     )
     embed.add_field(name='```.c stat [location]```', value='Return **Total Confirmed**, **Total Deaths**, and **Total Recovered** of given location along with a graph \n __[location]__ \n "all" = stats of all locations \n "other" = stats of locations other than China \n "country name" = stats of a specific country \n *(United States is abbreviated to **US** and United Kingdom is abbreviated to **UK**)* \n If you would like stats on a specific province or state (abbreviated), put it after the country name. \n Example: **.c stat US CA** - shows the stats of the state of California', inline=False)
@@ -172,8 +173,8 @@ async def stat(ctx, location : str, provst = ''):
             prev_deaths = deaths_df.iloc[:,-2].sum()
             recovered = recovered_df.iloc[:,-1].sum()
             prev_recovered = recovered_df.iloc[:,-2].sum()
-            ax = confirmed_df.iloc[:,4:].sum().plot(label='Confirmed')
-            ax = recovered_df.iloc[:,4:].sum().plot(label='Recovered')
+            ax = confirmed_df.iloc[:,4:].sum().plot(label='Confirmed', marker='o')
+            ax = recovered_df.iloc[:,4:].sum().plot(label='Recovered', marker='o')
 
         elif location == 'Other':
             confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
@@ -182,8 +183,8 @@ async def stat(ctx, location : str, provst = ''):
             prev_deaths = deaths_df[~deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
             recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
             prev_recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
-            ax = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Confirmed')
-            ax = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Recovered')
+            ax = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Confirmed', marker='o')
+            ax = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Recovered', marker='o')
 
         else:
             if provst:
@@ -193,8 +194,8 @@ async def stat(ctx, location : str, provst = ''):
                 prev_deaths = deaths_df[deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
                 recovered = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
                 prev_recovered = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
-                ax = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed')
-                ax = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered')
+                ax = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed', marker='o')
+                ax = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered', marker='o')
             else:
                 confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
                 prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
@@ -202,8 +203,8 @@ async def stat(ctx, location : str, provst = ''):
                 prev_deaths = deaths_df[deaths_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
                 recovered = recovered_df[recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
                 prev_recovered = recovered_df[recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
-                ax = confirmed_df[confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed')
-                ax = recovered_df[recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Recovered')
+                ax = confirmed_df[confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed', marker='o')
+                ax = recovered_df[recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Recovered', marker='o')
 
         #Check if change is postive | adds "+" before change
         change_confirmed = confirmed - prev_confirmed
@@ -246,7 +247,7 @@ async def stat(ctx, location : str, provst = ''):
             ylabels.append(lab)
 
         plt.yticks(locs, ylabels)
-
+        fig.autofmt_xdate()
         #Save graph to tmp folder
         filename = 'tmp\\' + location + '_graph.png'
         plt.savefig(filename, transparent=True)
@@ -257,9 +258,13 @@ async def stat(ctx, location : str, provst = ''):
 
         image = discord.File(file, filename='graph.png')
 
+        if ',' in provst:
+            provst = provst[-2:] + ','
+        elif provst != '':
+            provst = provst + ','
         embed = discord.Embed(
-            title=f'Coronavirus COVID-19 Cases | {location} {provst}',
-            description='Data from [Johns Hopkins CSSE Github](https://github.com/CSSEGISandData/COVID-19)',
+            title=f'Coronavirus (COVID-19) Cases | {provst} {location} ',
+            description='Documentation for all commands | Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE',
             colour=discord.Colour.red()
         )
         embed.set_image(url=f'attachment://graph.png')
@@ -273,7 +278,6 @@ async def stat(ctx, location : str, provst = ''):
 
     else:
         await ctx.send('There is no available data for this location')
-
 if __name__ == '__main__':
     # client.run(config.token)
     #Heroku
