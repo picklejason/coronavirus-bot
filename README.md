@@ -8,9 +8,9 @@ Data for the stats and graph are from the [data repository](https://github.com/C
 
 ## Usage
 
-* Invite the bot to your server using the following link: [invite](https://discordapp.com/api/oauth2/authorize?client_id=683462722368700526&permissions=0&scope=bot)
+* Invite the bot to your server using the following link: [invite](https://discordapp.com/oauth2/authorize?client_id=683462722368700526&permissions=59456&scope=bot)
 
-* The command prefix for the bot is `.c `
+* The command prefix for the bot is `.c ` or `@mention`
 
 * Use the `help` command for further info
 
@@ -18,16 +18,16 @@ Data for the stats and graph are from the [data repository](https://github.com/C
 
 * `.c stat "all"` Stats of all locations
 
-* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/2610c48959a97f5bf5ce4f1ea50c7711.png" height="405" width="365"/>
+* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/944b49e0e3445cd0991d38bc397459b1.png" height="430" width="350"/>
 
 * `.c stat "other"` Stats of locations other than China
 
-* <img align="center" style="float: center; margin: 0 10px 0 0;" src="https://i.gyazo.com/0c2460d923e600a995cf2cddce328674.png" height="405" width="365"/>
+* <img align="center" style="float: center; margin: 0 10px 0 0;" src="https://i.gyazo.com/2a85c00a97c2ae36bebc18ab976bb881.png" height="430" width="350"/>
 
 * `.c stat "country name"` Stats of a specific country
 
-* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/8b4867f480eb6e18d7b29bc1134eb1da.png" height="405" width="365"/>
+* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/6971562b7ee89defa08bc76cee2d67d5.png" height="430" width="350"/>
 
 * `.c reddit [category]` Reddit posts from [r/Coronavirus](https://www.reddit.com/r/Coronavirus/) | category = `Hot` `New` `Top` | Use :rewind: and :fast_forward: to scroll through
 
-* <img align="center" style="float: center; margin: 0 10px 0 0;" src="https://i.gyazo.com/e60c7f80e624c09d3e151e67d7f1fdcf.png" height="425" width="450"/>
+* <img align="center" style="float: center; margin: 0 10px 0 0;" src="https://i.gyazo.com/d0db2aca336b4dd6ad2847eacdb610e6.png" height="430" width="420"/>
