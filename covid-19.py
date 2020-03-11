@@ -1,12 +1,23 @@
 import discord
 import os
+import sys
+import config
+import logging
+import google.cloud.logging
+from google.cloud.logging.handlers import CloudLoggingHandler
 from discord import File
 from discord.utils import find
 from discord.ext import commands
 from discord.ext.commands import when_mentioned_or
 from datetime import datetime
-#Local
-# import config
+
+logging_client = google.cloud.logging.Client()
+cloud_logger = logging_client.logger('covid-19')
+logger = logging.getLogger('covid-19')
+logger.setLevel(logging.DEBUG)
+handler = CloudLoggingHandler(logging_client)
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
 
 class Coronavirus(commands.AutoShardedBot):
     def __init__(self):
@@ -19,19 +30,21 @@ class Coronavirus(commands.AutoShardedBot):
 
     def load(self):
         for filename in os.listdir('./cogs'):
-            if filename.endswith('.py'):
-                self.load_extension(f'cogs.{filename[:-3]}')
+            try:
+                if filename.endswith('.py'):
+                    self.load_extension(f'cogs.{filename[:-3]}')
+                    logger.info(f'{filename} loaded successfully')
+            except Exception:
+                logger.exception(f'{filename} failed to load')
 
     def unload(self):
         for filename in os.listdir('./cogs'):
-            if filename.endswith('.py'):
-                self.unload_extension(f'cogs.{filename[:-3]}')
-
-    def reload(self):
-        for filename in os.listdir('./cogs'):
-            if filename.endswith('.py'):
-                self.unload_extension(f'cogs.{filename[:-3]}')
-                self.load_extension(f'cogs.{filename[:-3]}')
+            try:
+                if filename.endswith('.py'):
+                    self.unload_extension(f'cogs.{filename[:-3]}')
+                    logger.info(f'{filename} unloaded successfully')
+            except Exception:
+                logger.exception(f'{filename} failed to unload')
 
     async def on_ready(self):
         #Waits until the client's internal cache is all ready
@@ -55,10 +68,9 @@ class Coronavirus(commands.AutoShardedBot):
             embed.add_field(name='Bot Invite', value='[Link](https://discordapp.com/api/oauth2/authorize?client_id=683462722368700526&permissions=59456&scope=bot)')
             embed.add_field(name ='Bot Source Code', value='[Github](https://github.com/picklejason/coronavirus-bot)')
 
+            logger.info(f'Server joined | Currently on {len(self.guilds)} servers')
             await general.send(embed=embed)
 
 if __name__ == '__main__':
     client = Coronavirus()
-    # client.run(config.token)
-    #Heroku
-    client.run(os.environ['TOKEN'])
+    client.run(config.token)

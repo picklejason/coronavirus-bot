@@ -3,9 +3,12 @@ import io
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import logging
 from discord import File
 from discord.ext import commands
 from datetime import datetime
+
+logger = logging.getLogger('covid-19')
 
 class Stats(commands.Cog):
 
@@ -124,7 +127,7 @@ class Stats(commands.Cog):
                 ylabels.append(lab)
             plt.yticks(locs, ylabels)
             #Save graph to tmp folder
-            filename = 'tmp\\' + location + '_graph.png'
+            filename = './graphs/graph.png'
             plt.savefig(filename, transparent=True)
             plt.close(fig)
 
@@ -134,12 +137,12 @@ class Stats(commands.Cog):
             image = discord.File(file, filename='graph.png')
 
             if ',' in provst:
-                provst = provst[-2:] + ','
+                provst = ' ' + provst[-2:] + ','
             elif provst != '':
-                provst = provst + ','
+                provst = ' ' + provst + ','
             embed = discord.Embed(
-                title=f'Coronavirus (COVID-19) Cases | {provst} {location} ',
-                description='Documentation for all commands | Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE',
+                title=f'Coronavirus (COVID-19) Cases |{provst} {location} ',
+                description='Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE',
                 colour=discord.Colour.red()
             )
             embed.set_image(url=f'attachment://graph.png')
@@ -148,7 +151,7 @@ class Stats(commands.Cog):
             embed.add_field(name='Recovered', value=f'**{int(recovered)}** {change_recovered}')
             embed.add_field(name='Mortality Rate', value=f'**{mortality_rate}%**')
             embed.set_footer(text= f'Updated {updated}')
-
+            logger.info(f'Stat command used for{provst} {location}')
             await ctx.send(file=image, embed=embed)
 
         else:

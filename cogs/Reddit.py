@@ -1,10 +1,13 @@
 import discord
 import praw
 import os
+import asyncio
+import logging
+import config
 from datetime import datetime
 from discord.ext import commands
-#Local
-#import config
+
+logger = logging.getLogger('covid-19')
 
 class Reddit(commands.Cog):
 
@@ -14,8 +17,8 @@ class Reddit(commands.Cog):
     def predicate(self, message, l, r):
         def check(reaction, user):
 
-            left = '⏪'
-            right = '⏩'
+            left = '⬅️'
+            right = '➡️'
             if reaction.message.id != message.id or user == self.client.user:
                 return False
             if l and reaction.emoji == left:
@@ -30,22 +33,18 @@ class Reddit(commands.Cog):
     @commands.command()
     async def reddit(self, ctx, category = 'Hot'):
 
-        left = '⏪'
-        right = '⏩'
+        icon = {'Hot' : '🔥',
+                'New' : '🆕',
+                'Top' : '🔝'}
+        left = '⬅️'
+        right = '➡️'
+        reactions = [left, right]
 
-        #Local
-        # red = praw.Reddit(client_id=config.redditID,
-        #                 client_secret=config.redditSecret,
-        #                 password=config.redditPW,
-        #                 user_agent=config.user_agent,
-        #                 username=config.redditName)
-
-        #Heroku
-        red = praw.Reddit(client_id=os.environ['REDDITID'],
-                        client_secret=os.environ['REDDITSECRET'],
-                        password=os.environ['REDDITPW'],
-                        user_agent=os.environ['USER_AGENT'],
-                        username=os.environ['REDDITNAME'])
+        red = praw.Reddit(client_id=config.redditID,
+                        client_secret=config.redditSecret,
+                        password=config.redditPW,
+                        user_agent=config.user_agent,
+                        username=config.redditName)
 
         category = category.title()
 
@@ -61,7 +60,7 @@ class Reddit(commands.Cog):
 
         index = 1
 
-        description = f'{category} posts | Bot needs permission to manage messages to scroll'
+        description = f'{icon[category]} | Bot needs permission to **manage messages** to flip pages'
         timestamp = datetime.utcnow()
         url = 'https://www.reddit.com/r/Coronavirus/'
         embed = discord.Embed(title='/r/Coronavirus', description=description, colour=discord.Colour.red(), timestamp=timestamp, url=url)
@@ -72,26 +71,26 @@ class Reddit(commands.Cog):
         embed.set_thumbnail(url='https://styles.redditmedia.com/t5_2x4yx/styles/communityIcon_ex5aikhvi3i41.png')
         embed.set_footer(text=f'Page {index} of 10')
         msg = await ctx.send(embed=embed)
+        logger.info('Reddit command used')
 
         while True:
+            for reaction in reactions:
+                await msg.add_reaction(reaction)
             l = index != 1
             r = index != 10
+            try:
+                react, self.user = await self.client.wait_for('reaction_add', check=self.predicate(msg, l, r), timeout=300)
+            except asyncio.TimeoutError:
+                try:
+                    await msg.delete()
+                except:
+                    pass
 
-            if l:
-                await msg.add_reaction(left)
-            else:
-                await msg.remove_reaction(left, msg.author)
-            if r:
-                await msg.add_reaction(right)
-            else:
-                await msg.remove_reaction(right, msg.author)
-
-            react, self.user = await self.client.wait_for('reaction_add', check=self.predicate(msg, l, r))
-            if react.emoji == left:
+            if react.emoji == left and index > 1:
                 index -= 1
                 await msg.remove_reaction(left, self.user)
 
-            elif react.emoji == right:
+            elif react.emoji == right and index < 10:
                 index += 1
                 await msg.remove_reaction(right, self.user)
 
