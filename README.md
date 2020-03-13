@@ -1,3 +1,5 @@
+[![Discord Bots](https://top.gg/api/widget/683462722368700526.svg)](https://top.gg/bot/683462722368700526)
+
 # Coronavirus Bot
 
 This is a Discord bot coded in Python with [discord.py](https://discordpy.readthedocs.io/en/latest/) for providing info on the novel coronavirus (COVID-19) by [picklejason](https://github.com/picklejason).
