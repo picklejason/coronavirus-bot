@@ -56,7 +56,7 @@ class Coronavirus(commands.AutoShardedBot):
         if general and general.permissions_for(guild.me).send_messages:
             embed = discord.Embed(
                     title='Coronavirus (COVID-19) Discord Bot',
-                    description='Thanks for inviting me! | Use **.c help** for more info on commands', #\n Please vote for me at [top.gg](https://top.gg/bot/683462722368700526/vote)',
+                    description='Thanks for inviting me! | Use **.c help** for more info on commands \n Please vote for me on [TOP.GG](https://top.gg/bot/683462722368700526/vote) 👍',
                     colour=discord.Colour.red()
                 )
             embed.add_field(name='Command Prefix', value='.c or @mention')

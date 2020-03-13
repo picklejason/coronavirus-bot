@@ -7,6 +7,7 @@ import logging
 from discord import File
 from discord.ext import commands
 from datetime import datetime
+from utils.codes import states, alt_names, alpha2, alpha3
 
 logger = logging.getLogger('covid-19')
 
@@ -17,7 +18,7 @@ class Stats(commands.Cog):
 
     #Statistics Command | Provides Confirmed, Deaths, and Recovered | Mortality Rate: Deaths/Confirmed | Includes Graph
     @commands.command()
-    async def stat(self, ctx, location : str, provst = ''):
+    async def stat(self, ctx, location = 'All', provst = ''):
 
         if len(location) == 2:
             location = location.upper()
@@ -25,9 +26,21 @@ class Stats(commands.Cog):
             location = location.title()
 
         if len(provst) == 2:
-            provst = ', ' + provst.upper()
+            provst = provst.upper()
         else:
             provst = provst.title()
+
+        if location in alpha2:
+            location = alpha2[location]
+
+        elif location in alpha3:
+            location = alpha3[location]
+
+        elif location in alt_names:
+            location = alt_names[location]
+
+        if provst in states:
+            provst = states[provst]
 
         confirmed_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv'
         deaths_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Deaths.csv'
@@ -36,6 +49,10 @@ class Stats(commands.Cog):
         confirmed_df = pd.read_csv(confirmed_url, error_bad_lines=False)
         deaths_df = pd.read_csv(deaths_url, error_bad_lines=False)
         recovered_df = pd.read_csv(recovered_url, error_bad_lines=False)
+
+        confirmed_df = confirmed_df[~confirmed_df['Province/State'].str.contains(', ', na=False)]
+        deaths_df = deaths_df[~deaths_df['Province/State'].str.contains(',', na=False)]
+        recovered_df = recovered_df[~recovered_df['Province/State'].str.contains(', ', na=False)]
 
         #Check if data exists for location
         if location == 'All' or location == 'Other' or any(confirmed_df['Country/Region'].str.contains(location)):
@@ -67,23 +84,27 @@ class Stats(commands.Cog):
 
             else:
                 if provst:
-                    confirmed = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
-                    prev_confirmed = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
-                    deaths = deaths_df[deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
-                    prev_deaths = deaths_df[deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
-                    recovered = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
-                    prev_recovered = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
-                    ax = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
-                    ax = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                    if any(confirmed_df['Province/State'].str.contains(provst)):
+                        confirmed = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
+                        prev_confirmed = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
+                        deaths = deaths_df[deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
+                        prev_deaths = deaths_df[deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
+                        recovered = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
+                        prev_recovered = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
+                        ax = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                        ax = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                    else:
+                        await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
+                        return
                 else:
-                    confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
-                    prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
-                    deaths = deaths_df[deaths_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
-                    prev_deaths = deaths_df[deaths_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
-                    recovered = recovered_df[recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
-                    prev_recovered = recovered_df[recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
-                    ax = confirmed_df[confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
-                    ax = recovered_df[recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                    confirmed = confirmed_df[confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
+                    prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
+                    deaths = deaths_df[deaths_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
+                    prev_deaths = deaths_df[deaths_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
+                    recovered = recovered_df[recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
+                    prev_recovered = recovered_df[recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
+                    ax = confirmed_df[confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                    ax = recovered_df[recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
 
             #Check if change is postive | adds "+" before change
             change_confirmed = confirmed - prev_confirmed
@@ -136,13 +157,22 @@ class Stats(commands.Cog):
 
             image = discord.File(file, filename='graph.png')
 
-            if ',' in provst:
-                provst = ' ' + provst[-2:] + ','
-            elif provst != '':
-                provst = ' ' + provst + ','
+            # if ',' in provst:
+            #     provst = ' ' + provst[-2:] + ','
+            # elif provst != '':
+            #     provst = ' ' + provst + ','
+
+            if location == 'US' or provst:
+                description = 'Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE \n Stats update daily and may take some time to change \n Spike in graph due to stats prior to **3/10** not being listed. [Issue](https://github.com/CSSEGISandData/COVID-19/issues/382) \n Use **.c help** for more info on commands'
+                if len(provst) > 0:
+                    provst = ' ' + provst + ','
+
+            else:
+                description='Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE \n Stats update daily and may take some time to change \n Use **.c help** for more info on commands'
+
             embed = discord.Embed(
                 title=f'Coronavirus (COVID-19) Cases |{provst} {location} ',
-                description='Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE',
+                description=description,
                 colour=discord.Colour.red()
             )
             embed.set_image(url=f'attachment://graph.png')
@@ -151,11 +181,11 @@ class Stats(commands.Cog):
             embed.add_field(name='Recovered', value=f'**{int(recovered)}** {change_recovered}')
             embed.add_field(name='Mortality Rate', value=f'**{mortality_rate}%**')
             embed.set_footer(text= f'Updated {updated}')
-            logger.info(f'Stat command used for{provst} {location}')
+            logger.info(f'Stat command used for {provst} {location}')
             await ctx.send(file=image, embed=embed)
 
         else:
-            await ctx.send('There is no available data for this location')
+            await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
 
 def setup(client):
     client.add_cog(Stats(client))
