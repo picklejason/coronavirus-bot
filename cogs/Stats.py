@@ -2,6 +2,7 @@ import discord
 import io
 import os
 import pandas as pd
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import logging
 from discord import File
@@ -16,8 +17,16 @@ class Stats(commands.Cog):
     def __init__(self, client):
         self.client = client
 
+    confirmed_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv'
+    deaths_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Deaths.csv'
+    recovered_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Recovered.csv'
+
+    confirmed_df = pd.read_csv(confirmed_url, error_bad_lines=False).dropna(axis=1, how='all')
+    deaths_df = pd.read_csv(deaths_url, error_bad_lines=False).dropna(axis=1, how='all')
+    recovered_df = pd.read_csv(recovered_url, error_bad_lines=False).dropna(axis=1, how='all')
+
     #Statistics Command | Provides Confirmed, Deaths, and Recovered | Mortality Rate: Deaths/Confirmed | Includes Graph
-    @commands.command()
+    @commands.command(name='stat', aliases=['stats', 'statistic', 's', 'cases'])
     async def stat(self, ctx, location = 'All', provst = ''):
 
         if len(location) == 2:
@@ -42,69 +51,63 @@ class Stats(commands.Cog):
         if provst in states:
             provst = states[provst]
 
-        confirmed_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv'
-        deaths_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Deaths.csv'
-        recovered_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Recovered.csv'
-
-        confirmed_df = pd.read_csv(confirmed_url, error_bad_lines=False)
-        deaths_df = pd.read_csv(deaths_url, error_bad_lines=False)
-        recovered_df = pd.read_csv(recovered_url, error_bad_lines=False)
-
-        confirmed_df = confirmed_df[~confirmed_df['Province/State'].str.contains(', ', na=False)]
-        deaths_df = deaths_df[~deaths_df['Province/State'].str.contains(',', na=False)]
-        recovered_df = recovered_df[~recovered_df['Province/State'].str.contains(', ', na=False)]
-
         #Check if data exists for location
-        if location == 'All' or location == 'Other' or any(confirmed_df['Country/Region'].str.contains(location)):
+        if location == 'All' or location == 'Other' or self.confirmed_df['Country/Region'].str.contains(location).any():
 
-            updated = list(confirmed_df)[-1]
+            updated = list(self.confirmed_df)[-1]
+            mpl.rcParams.update({'figure.max_open_warning': 0})
             plt.style.use('dark_background')
             fig = plt.figure(dpi=200)
 
             #Parse Data
             if location == 'All':
-                confirmed = confirmed_df.iloc[:,-1].sum()
-                prev_confirmed = confirmed_df.iloc[:,-2].sum()
-                deaths = deaths_df.iloc[:,-1].sum()
-                prev_deaths = deaths_df.iloc[:,-2].sum()
-                recovered = recovered_df.iloc[:,-1].sum()
-                prev_recovered = recovered_df.iloc[:,-2].sum()
-                ax = confirmed_df.iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
-                ax = recovered_df.iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                confirmed = self.confirmed_df.iloc[:,-1].sum()
+                prev_confirmed = self.confirmed_df.iloc[:,-2].sum()
+                deaths = self.deaths_df.iloc[:,-1].sum()
+                prev_deaths = self.deaths_df.iloc[:,-2].sum()
+                recovered = self.recovered_df.iloc[:,-1].sum()
+                prev_recovered = self.recovered_df.iloc[:,-2].sum()
+                ax = self.confirmed_df.iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                ax = self.recovered_df.iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
 
             elif location == 'Other':
-                confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
-                prev_confirmed = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
-                deaths = deaths_df[~deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
-                prev_deaths = deaths_df[~deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
-                recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
-                prev_recovered = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
-                ax = confirmed_df[~confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
-                ax = recovered_df[~recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                confirmed = self.confirmed_df[~self.confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+                prev_confirmed = self.confirmed_df[~self.confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
+                deaths = self.deaths_df[~self.deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+                prev_deaths = self.deaths_df[~self.deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
+                recovered = self.recovered_df[~self.recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+                prev_recovered = self.recovered_df[~self.recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-2].sum()
+                ax = self.confirmed_df[~self.confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                ax = self.recovered_df[~self.recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
 
             else:
                 if provst:
-                    if any(confirmed_df['Province/State'].str.contains(provst)):
-                        confirmed = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
-                        prev_confirmed = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
-                        deaths = deaths_df[deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
-                        prev_deaths = deaths_df[deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
-                        recovered = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
-                        prev_recovered = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
-                        ax = confirmed_df[confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
-                        ax = recovered_df[recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                    if self.confirmed_df['Province/State'].str.match(provst).any():
+                        confirmed = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
+                        prev_confirmed = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
+                        deaths = self.deaths_df[self.deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
+                        prev_deaths = self.deaths_df[self.deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
+                        recovered = self.recovered_df[self.recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
+                        prev_recovered = self.recovered_df[self.recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
+                        if provst in states:
+                            states_abr = dict((v,k) for k,v in states.items())[provst]
+                            ax = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(f'{provst}|{states_abr}', na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                            ax = self.recovered_df[self.recovered_df['Province/State'].str.contains(f'{provst}|{states_abr}', na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                        else:
+                            ax = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                            ax = self.recovered_df[self.recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
                     else:
                         await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
                         return
                 else:
-                    confirmed = confirmed_df[confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
-                    prev_confirmed = confirmed_df[confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
-                    deaths = deaths_df[deaths_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
-                    prev_deaths = deaths_df[deaths_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
-                    recovered = recovered_df[recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
-                    prev_recovered = recovered_df[recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
-                    ax = confirmed_df[confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
-                    ax = recovered_df[recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                    confirmed = self.confirmed_df[self.confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
+                    prev_confirmed = self.confirmed_df[self.confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
+                    deaths = self.deaths_df[self.deaths_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
+                    prev_deaths = self.deaths_df[self.deaths_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
+                    recovered = self.recovered_df[self.recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
+                    prev_recovered = self.recovered_df[self.recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
+                    ax = self.confirmed_df[self.confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                    ax = self.recovered_df[self.recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
 
             #Check if change is postive | adds "+" before change
             change_confirmed = confirmed - prev_confirmed
@@ -125,10 +128,27 @@ class Stats(commands.Cog):
             else:
                 change_recovered = ''
 
+            active_cases = int(confirmed - deaths - recovered)
+            prev_active_cases = int(prev_confirmed - prev_deaths - prev_recovered)
+            change_active_cases = active_cases - prev_active_cases
+            if change_active_cases > 0:
+                change_active_cases = f'+{change_active_cases}'
+
             if confirmed == 0 or deaths == 0:
                 mortality_rate = 0
+                percent_recovered = 0
             else:
                 mortality_rate = round((deaths/confirmed * 100), 2)
+                prev_mortality_rate = round((prev_deaths/prev_confirmed * 100), 2)
+                change_mortality_rate = round((mortality_rate - prev_mortality_rate), 2)
+                if change_mortality_rate > 0:
+                    change_mortality_rate = f'+{change_mortality_rate}'
+
+                percent_recovered = round((recovered/confirmed * 100), 2)
+                prev_percent_recovered = round((prev_recovered/prev_confirmed * 100), 2)
+                change_percent_recovered = round((percent_recovered - prev_percent_recovered), 2)
+                if change_percent_recovered > 0:
+                    change_percent_recovered = f'+{change_percent_recovered}'
 
             #Graph
             fig.autofmt_xdate()
@@ -147,29 +167,20 @@ class Stats(commands.Cog):
                     lab = "{:,}".format(int(lab))
                 ylabels.append(lab)
             plt.yticks(locs, ylabels)
-            #Save graph to tmp folder
             filename = './graphs/graph.png'
             plt.savefig(filename, transparent=True)
             plt.close(fig)
-
             with open(filename, 'rb') as f:
                 file = io.BytesIO(f.read())
-
             image = discord.File(file, filename='graph.png')
 
-            # if ',' in provst:
-            #     provst = ' ' + provst[-2:] + ','
-            # elif provst != '':
-            #     provst = ' ' + provst + ','
-
             if location == 'US' or provst:
-                description = 'Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE \n Stats update daily and may take some time to change \n Spike in graph due to stats prior to **3/10** not being listed. [Issue](https://github.com/CSSEGISandData/COVID-19/issues/382) \n Use **.c help** for more info on commands'
+                description = 'Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE \n Stats update **daily** | May be slightly inconsistent with other sources \n Use **.c help** for more info on commands'
                 if len(provst) > 0:
                     provst = ' ' + provst + ','
 
             else:
-                description='Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE \n Stats update daily and may take some time to change \n Use **.c help** for more info on commands'
-
+                description='Data from [Data Repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE \n Stats update **daily** | May be slightly inconsistent with other sources \n Use **.c help** for more info on commands'
             embed = discord.Embed(
                 title=f'Coronavirus (COVID-19) Cases |{provst} {location} ',
                 description=description,
@@ -179,7 +190,9 @@ class Stats(commands.Cog):
             embed.add_field(name='Confirmed', value= f'**{int(confirmed)}** {change_confirmed}')
             embed.add_field(name='Deaths', value=f'**{int(deaths)}** {change_deaths}')
             embed.add_field(name='Recovered', value=f'**{int(recovered)}** {change_recovered}')
-            embed.add_field(name='Mortality Rate', value=f'**{mortality_rate}%**')
+            embed.add_field(name='Active Cases', value=f'**{active_cases}** ({change_active_cases})')
+            embed.add_field(name='Mortality Rate', value=f'**{mortality_rate}%** ({change_mortality_rate}%)')
+            embed.add_field(name='Percentage Recovered', value=f'**{percent_recovered}%** ({change_percent_recovered}%)')
             embed.set_footer(text= f'Updated {updated}')
             logger.info(f'Stat command used for {provst} {location}')
             await ctx.send(file=image, embed=embed)

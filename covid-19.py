@@ -2,6 +2,7 @@ import discord
 import os
 import sys
 import config
+import asyncio
 import logging
 import google.cloud.logging
 from google.cloud.logging.handlers import CloudLoggingHandler
@@ -49,7 +50,9 @@ class Coronavirus(commands.AutoShardedBot):
     async def on_ready(self):
         #Waits until the client's internal cache is all ready
         await self.wait_until_ready()
-        await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{len(client.guilds)} servers | .c help'))
+        while True:
+            await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{len(client.guilds)} servers | .c help'))
+            await asyncio.sleep(60)
 
     async def on_guild_join(self, guild: discord.Guild):
         general = find(lambda x: x.name == 'general', guild.text_channels)
@@ -59,7 +62,7 @@ class Coronavirus(commands.AutoShardedBot):
                     description='Thanks for inviting me! | Use **.c help** for more info on commands \n Please vote for me on [TOP.GG](https://top.gg/bot/683462722368700526/vote) 👍',
                     colour=discord.Colour.red()
                 )
-            embed.add_field(name='Command Prefix', value='.c or @mention')
+            embed.add_field(name='Command Prefix', value='`.c` or `@mention`')
             users = 0
             for s in self.guilds:
                 users += len(s.members)
@@ -67,7 +70,8 @@ class Coronavirus(commands.AutoShardedBot):
             embed.add_field(name='Users', value=users)
             embed.add_field(name='Bot Invite', value='[Link](https://discordapp.com/api/oauth2/authorize?client_id=683462722368700526&permissions=59456&scope=bot)')
             embed.add_field(name ='Bot Source Code', value='[Github](https://github.com/picklejason/coronavirus-bot)')
-
+            embed.add_field(name='Donate', value='[Support Me on Ko-fi](https://ko-fi.com/picklejason)')
+            embed.set_footer(text='Made by PickleJason#5293 | Feel free to message me for any issues or suggestions')
             logger.info(f'Server joined | Currently on {len(self.guilds)} servers')
             await general.send(embed=embed)
 
