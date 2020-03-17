@@ -10,6 +10,7 @@ class Help(commands.Cog):
         self.client = client
 
     @commands.command(name='help', aliases=['h', 'commands'])
+    @commands.cooldown(3, 10, commands.BucketType.user)
     async def help(self, ctx):
 
         embed = discord.Embed(
@@ -24,10 +25,11 @@ class Help(commands.Cog):
         embed.add_field(name='Bot Invite', value='[Link](https://discordapp.com/api/oauth2/authorize?client_id=683462722368700526&permissions=59456&scope=bot)')
         embed.add_field(name='Donate', value='[Support Me on Ko-fi](https://ko-fi.com/picklejason)')
         embed.set_footer(text='Have any issues or suggestions? Feel free to message me @PickleJason#5293')
-        logger.info("Help command used")
+        logger.info('Help command used')
         await ctx.send(embed=embed)
 
     @commands.command(name='info', aliases=['about', 'vote', 'invite', 'donate'])
+    @commands.cooldown(3, 10, commands.BucketType.user)
     async def info(self, ctx):
         embed = discord.Embed(
             title='Bot Info',
@@ -44,10 +46,11 @@ class Help(commands.Cog):
         embed.add_field(name ='Bot Source Code', value='[Github](https://github.com/picklejason/coronavirus-bot)')
         embed.add_field(name='Donate', value='[Support Me on Ko-fi](https://ko-fi.com/picklejason)')
         embed.set_footer(text='Have any issues or suggestions? Feel free to message me @PickleJason#5293')
-        logger.info("Info command used")
+        logger.info('Info command used')
         await ctx.send(embed=embed)
 
     @commands.command()
+    @commands.cooldown(3, 10, commands.BucketType.user)
     async def ping(self, ctx):
         embed = discord.Embed(
             title='Ping',
@@ -55,6 +58,7 @@ class Help(commands.Cog):
             colour=discord.Colour.red()
         )
         embed.set_footer(text='Have any issues or suggestions? Feel free to message me @PickleJason#5293')
+        logger.info('Ping command used')
         await ctx.send(embed=embed)
 
     @commands.Cog.listener()
@@ -63,6 +67,12 @@ class Help(commands.Cog):
         if isinstance(error, commands.CommandNotFound):
             message = ctx.message.content
             logger.info(f'Invalid command use \"{message}\"')
+        elif isinstance(error, commands.CommandOnCooldown):
+            message = 'To prevent spam, the command has been rate limited to 3 times every 10 seconds'
+            logger.info('Rate limit reached')
+            await ctx.send(message)
+        else:
+            raise error
             # if ctx.guild.id == 264445053596991498:
             #     return
             # else:

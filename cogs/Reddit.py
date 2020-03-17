@@ -22,6 +22,7 @@ class Reddit(commands.Cog):
 
     #Reddit Command | Returns 5 posts (Hot, New, Top) from the subreddit r/Coronavirus
     @commands.command()
+    @commands.cooldown(3, 10, commands.BucketType.user)
     async def reddit(self, ctx, category = 'Hot'):
 
         icon = {'Hot' : '🔥',

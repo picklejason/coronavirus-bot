@@ -27,6 +27,7 @@ class Stats(commands.Cog):
 
     #Statistics Command | Provides Confirmed, Deaths, and Recovered | Mortality Rate: Deaths/Confirmed | Includes Graph
     @commands.command(name='stat', aliases=['stats', 'statistic', 's', 'cases'])
+    @commands.cooldown(3, 10, commands.BucketType.user)
     async def stat(self, ctx, location = 'All', provst = ''):
 
         if len(location) == 2:
@@ -134,21 +135,32 @@ class Stats(commands.Cog):
             if change_active_cases > 0:
                 change_active_cases = f'+{change_active_cases}'
 
-            if confirmed == 0 or deaths == 0:
-                mortality_rate = 0
-                percent_recovered = 0
-            else:
+            if confirmed != 0:
                 mortality_rate = round((deaths/confirmed * 100), 2)
+                recovery_rate = round((recovered/confirmed * 100), 2)
+            if prev_confirmed != 0:
                 prev_mortality_rate = round((prev_deaths/prev_confirmed * 100), 2)
                 change_mortality_rate = round((mortality_rate - prev_mortality_rate), 2)
+                prev_recovery_rate = round((prev_recovered/prev_confirmed * 100), 2)
+                change_recovery_rate = round((recovery_rate - prev_recovery_rate), 2)
                 if change_mortality_rate > 0:
-                    change_mortality_rate = f'+{change_mortality_rate}'
+                    change_mortality_rate = f'(+{change_mortality_rate}%)'
+                elif change_mortality_rate < 0:
+                    change_mortality_rate = f'({change_mortality_rate}%)'
+                else:
+                    change_mortality_rate = ''
 
-                percent_recovered = round((recovered/confirmed * 100), 2)
-                prev_percent_recovered = round((prev_recovered/prev_confirmed * 100), 2)
-                change_percent_recovered = round((percent_recovered - prev_percent_recovered), 2)
-                if change_percent_recovered > 0:
-                    change_percent_recovered = f'+{change_percent_recovered}'
+                if change_recovery_rate > 0:
+                    change_recovery_rate = f'(+{change_recovery_rate}%)'
+                elif change_recovery_rate < 0:
+                    change_recovery_rate = f'({change_recovery_rate}%)'
+                else:
+                    change_recovery_rate = ''
+            else:
+                mortality_rate = 0
+                recovery_rate = 0
+                change_mortality_rate = ''
+                change_recovery_rate = ''
 
             #Graph
             fig.autofmt_xdate()
@@ -191,10 +203,10 @@ class Stats(commands.Cog):
             embed.add_field(name='Deaths', value=f'**{int(deaths)}** {change_deaths}')
             embed.add_field(name='Recovered', value=f'**{int(recovered)}** {change_recovered}')
             embed.add_field(name='Active Cases', value=f'**{active_cases}** ({change_active_cases})')
-            embed.add_field(name='Mortality Rate', value=f'**{mortality_rate}%** ({change_mortality_rate}%)')
-            embed.add_field(name='Percentage Recovered', value=f'**{percent_recovered}%** ({change_percent_recovered}%)')
-            embed.set_footer(text= f'Updated {updated}')
-            logger.info(f'Stat command used for {provst} {location}')
+            embed.add_field(name='Mortality Rate', value=f'**{mortality_rate}%** {change_mortality_rate}')
+            embed.add_field(name='Recovery Rate', value=f'**{recovery_rate}%** {change_recovery_rate}')
+            embed.set_footer(text= f'Updated {updated} | Support me at https://ko-fi.com/picklejason')
+            logger.info('Stat command used for {provst} {location}')
             await ctx.send(file=image, embed=embed)
 
         else:
