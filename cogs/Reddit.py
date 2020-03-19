@@ -11,8 +11,8 @@ logger = logging.getLogger('covid-19')
 
 class Reddit(commands.Cog):
 
-    def __init__(self, client):
-        self.client = client
+    def __init__(self, bot):
+        self.bot = bot
 
     red = praw.Reddit(client_id=config.redditID,
                     client_secret=config.redditSecret,
@@ -61,7 +61,7 @@ class Reddit(commands.Cog):
 
         def predicate(message, l, r):
             def check(reaction, user):
-                if reaction.message.id != message.id or user == self.client.user:
+                if reaction.message.id != message.id or user == self.bot.user:
                     return False
                 if l and reaction.emoji == left and user == ctx.message.author:
                     return True
@@ -76,7 +76,7 @@ class Reddit(commands.Cog):
             l = index != 1
             r = index != 10
             try:
-                react, self.user = await self.client.wait_for('reaction_add', check=predicate(msg, l, r), timeout=300)
+                react, self.user = await self.bot.wait_for('reaction_add', check=predicate(msg, l, r), timeout=300)
             except asyncio.TimeoutError:
                 try:
                     await msg.delete()
@@ -105,5 +105,5 @@ class Reddit(commands.Cog):
             embed.set_footer(text=f'Requested by {ctx.message.author} • Page {index} of 10', icon_url=ctx.message.author.avatar_url)
             await msg.edit(embed=embed)
 
-def setup(client):
-    client.add_cog(Reddit(client))
+def setup(bot):
+    bot.add_cog(Reddit(bot))

@@ -23,9 +23,9 @@ logger.addHandler(handler)
 class Coronavirus(commands.AutoShardedBot):
     def __init__(self):
         super().__init__(
-            command_prefix=when_mentioned_or(".c "),
-            activity=discord.Game(name="Loading..."),
-        )
+            command_prefix=when_mentioned_or('.c '),
+            activity=discord.Game(name="Loading...")
+            )
         self.remove_command('help')
         self.load()
 
@@ -48,33 +48,40 @@ class Coronavirus(commands.AutoShardedBot):
                 logger.exception(f'{filename} failed to unload')
 
     async def on_ready(self):
-        #Waits until the client's internal cache is all ready
         await self.wait_until_ready()
         while True:
-            await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{len(client.guilds)} servers | .c help'))
-            await asyncio.sleep(60)
+            await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{len(bot.guilds)} servers | .c help'))
+            await asyncio.sleep(120)
 
     async def on_guild_join(self, guild: discord.Guild):
         general = find(lambda x: x.name == 'general', guild.text_channels)
+        channel = bot.get_channel(686768403339542687)
+        embed_join = discord.Embed(description=f'Joined server **{guild.name}** with **{len(guild.members)}** members | Total: **{len(self.guilds)}** servers', timestamp=datetime.utcnow(), colour=discord.Colour.green())
+        await channel.send(embed=embed_join)
+        # logger.info(f'Joined **{guild.name}** | Currently on **{len(self.guilds)}** servers')
         if general and general.permissions_for(guild.me).send_messages:
             embed = discord.Embed(
                     title='Coronavirus (COVID-19) Discord Bot',
-                    description='Thanks for inviting me! | Use **.c help** for more info on commands \n Please vote for me on [TOP.GG](https://top.gg/bot/683462722368700526/vote) 👍',
+                    description='Thanks for inviting me! | Use **.c help** for more info on commands \n •Please vote for me on [TOP.GG](https://top.gg/bot/683462722368700526/vote) <:dbl:689485017667469327>',
                     colour=discord.Colour.red()
-                )
+                    )
             embed.add_field(name='Command Prefix', value='`.c` or `@mention`')
             users = 0
             for s in self.guilds:
                 users += len(s.members)
-            embed.add_field(name='Servers', value=len(self.guilds))
-            embed.add_field(name='Users', value=users)
-            embed.add_field(name='Bot Invite', value='[Link](https://discordapp.com/api/oauth2/authorize?client_id=683462722368700526&permissions=59456&scope=bot)')
-            embed.add_field(name ='Bot Source Code', value='[Github](https://github.com/picklejason/coronavirus-bot)')
-            embed.add_field(name='Donate', value='[Support Me on Ko-fi](https://ko-fi.com/picklejason)')
+            embed.add_field(name='Servers | Shards', value=f'<:servers:689502498251341953> {len(self.guilds)} | {len(self.shards)}')
+            embed.add_field(name='Users', value=f'<:user:689502620590669912> {users}')
+            embed.add_field(name='Bot Source Code', value='<:github:689501322969350158> [Github](https://github.com/picklejason/coronavirus-bot)')
+            embed.add_field(name='Bot Invite', value='<:discord:689486285349715995> [Link](https://discordapp.com/api/oauth2/authorize?client_id=683462722368700526&permissions=59456&scope=bot)')
+            embed.add_field(name='Donate', value='<:Kofi:689483361785217299> [Ko-fi](https://ko-fi.com/picklejason)')
             embed.set_footer(text='Made by PickleJason#5293 | Feel free to message me for any issues or suggestions')
-            logger.info(f'Server joined | Currently on {len(self.guilds)} servers')
             await general.send(embed=embed)
 
+    async def on_guild_remove(self, guild: discord.Guild):
+        channel = bot.get_channel(686768403339542687)
+        embed_leave = discord.Embed(description=f'Left server **{guild.name}** with **{len(guild.members)}** members | Total: **{len(self.guilds)}** servers', timestamp=datetime.utcnow(), colour=discord.Colour.red())
+        await channel.send(embed=embed_leave)
+
 if __name__ == '__main__':
-    client = Coronavirus()
-    client.run(config.token)
+    bot = Coronavirus()
+    bot.run(config.token)
