@@ -2,9 +2,9 @@ import discord
 import io
 import os
 import pandas as pd
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import logging
+import gc
 from discord import File
 from discord.ext import commands
 from datetime import datetime
@@ -30,7 +30,7 @@ class Stats(commands.Cog):
     @commands.cooldown(3, 10, commands.BucketType.user)
     async def stat(self, ctx, location = 'All', provst = ''):
 
-        if len(location) == 2:
+        if len(location) == 2 or len(location) == 3:
             location = location.upper()
         else:
             location = location.title()
@@ -51,12 +51,12 @@ class Stats(commands.Cog):
             provst = states[provst]
 
         #Check if data exists for location
-        if location == 'All' or location == 'Other' or self.confirmed_df['Country/Region'].str.contains(location).any():
+        if location == 'ALL' or location == 'Other' or self.confirmed_df['Country/Region'].str.contains(location).any():
 
             updated = list(self.confirmed_df)[-1]
 
             #Parse Data
-            if location == 'All':
+            if location == 'ALL':
                 confirmed = self.confirmed_df.iloc[:,-1].sum()
                 prev_confirmed = self.confirmed_df.iloc[:,-2].sum()
                 deaths = self.deaths_df.iloc[:,-1].sum()
@@ -74,7 +74,7 @@ class Stats(commands.Cog):
 
             else:
                 if provst:
-                    if self.confirmed_df['Province/State'].str.match(provst).any():
+                    if self.confirmed_df['Province/State'].str.contains(provst).any():
                         confirmed = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
                         prev_confirmed = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,-2].sum()
                         deaths = self.deaths_df[self.deaths_df['Province/State'].str.contains(provst, na=False)].iloc[:,-1].sum()
@@ -85,12 +85,12 @@ class Stats(commands.Cog):
                         await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
                         return
                 else:
-                    confirmed = self.confirmed_df[self.confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
-                    prev_confirmed = self.confirmed_df[self.confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
-                    deaths = self.deaths_df[self.deaths_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
-                    prev_deaths = self.deaths_df[self.deaths_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
-                    recovered = self.recovered_df[self.recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
-                    prev_recovered = self.recovered_df[self.recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,-2].sum()
+                    confirmed = self.confirmed_df[self.confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
+                    prev_confirmed = self.confirmed_df[self.confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
+                    deaths = self.deaths_df[self.deaths_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
+                    prev_deaths = self.deaths_df[self.deaths_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
+                    recovered = self.recovered_df[self.recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
+                    prev_recovered = self.recovered_df[self.recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
 
             #Check if change is postive | adds "+" before change
             change_confirmed = confirmed - prev_confirmed
@@ -115,7 +115,11 @@ class Stats(commands.Cog):
             prev_active_cases = int(prev_confirmed - prev_deaths - prev_recovered)
             change_active_cases = active_cases - prev_active_cases
             if change_active_cases > 0:
-                change_active_cases = f'+{change_active_cases}'
+                change_active_cases = f'(+{change_active_cases})'
+            elif change_active_cases < 0:
+                change_active_cases = f'({change_active_cases})'
+            else:
+                change_active_cases = ''
 
             if confirmed != 0:
                 mortality_rate = round((deaths/confirmed * 100), 2)
@@ -144,7 +148,7 @@ class Stats(commands.Cog):
                 change_mortality_rate = ''
                 change_recovery_rate = ''
 
-            description='•Stats update **daily** | May be slightly inconsistent with other sources \n •React with 📈 for a linear graph or 📉 for a log graph \n •Please vote for me on [TOP.GG](https://top.gg/bot/683462722368700526/vote) <:dbl:689485017667469327>'
+            description='•Stats update **daily** around 23:59 (UTC) | May slightly differ from other sources \n •React with 📈 for a linear graph or 📉 for a log graph (within 60s) \n •Please vote for me on [TOP.GG](https://top.gg/bot/683462722368700526/vote) <:dbl:689485017667469327>'
             embed = discord.Embed(
                 title=f'Coronavirus (COVID-19) Cases  | {provst} {location} ',
                 description=description,
@@ -154,11 +158,11 @@ class Stats(commands.Cog):
             embed.add_field(name='<:confirmed:689494326493184090> Confirmed', value= f'**{int(confirmed)}** {change_confirmed}')
             embed.add_field(name='<:deaths:689489690101153800> Deaths', value=f'**{int(deaths)}** {change_deaths}')
             embed.add_field(name='<:recovered:689490988808274003> Recovered', value=f'**{int(recovered)}** {change_recovered}')
-            embed.add_field(name='<:activecases:689494177733410861> Active Cases', value=f'**{active_cases}** ({change_active_cases})')
+            embed.add_field(name='<:activecases:689494177733410861> Active Cases', value=f'**{active_cases}** {change_active_cases}')
             embed.add_field(name='<:mortalityrate:689488380865544345> Mortality Rate', value=f'**{mortality_rate}%** {change_mortality_rate}')
             embed.add_field(name='<:recoveryrate:689492820125417521> Recovery Rate', value=f'**{recovery_rate}%** {change_recovery_rate}')
             embed.set_footer(text= f'Updated {updated} | Support me at https://ko-fi.com/picklejason')
-            logger.info(f'Stat command used for {provst} {location}')
+            # logger.info(f'Stat command used for {provst} {location} by {ctx.message.author}({ctx.message.author.id}) in {ctx.message.guild}({ctx.message.guild.id})')
             msg = await ctx.send(embed=embed)
 
             linear = '📈'
@@ -175,91 +179,70 @@ class Stats(commands.Cog):
                     return False
                 return check
 
-            mpl.rcParams.update({'figure.max_open_warning': 0})
-            plt.style.use('dark_background')
-            fig = plt.figure(dpi=200)
+            async def plot(graph_type):
 
-            for graph in graphs:
-                await msg.add_reaction(graph)
+                fig = plt.figure(dpi=150)
+                plt.style.use('dark_background')
 
-            while True:
-
-                react, self.user = await self.bot.wait_for('reaction_add', check=predicate(msg))
-
-                if react.emoji == linear:
-                    logger.info(f'Linear graph used for {provst} {location}')
-                    filename = './graphs/lineargraph.png'
-
-                    if location == 'All':
+                if location == 'ALL':
+                    if graph_type == 'linear':
                         ax = self.confirmed_df.iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
                         ax = self.recovered_df.iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
-                    elif location == 'Other':
-                        ax = self.confirmed_df[~self.confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
-                        ax = self.recovered_df[~self.recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
-
-                    else:
-                        if provst:
-                            if self.confirmed_df['Province/State'].str.match(provst).any():
-                                if provst in states:
-                                    ax = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(f'{provst}|{states_abr}', na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
-                                    ax = self.recovered_df[self.recovered_df['Province/State'].str.contains(f'{provst}|{states_abr}', na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
-                                else:
-                                    ax = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
-                                    ax = self.recovered_df[self.recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
-                            else:
-                                await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
-                                return
-                        else:
-                            ax = self.confirmed_df[self.confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
-                            ax = self.recovered_df[self.recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
-
-                    ax.set_ylim(ymin=0)
-                    plt.title('Linear Graph')
-
-                    await msg.remove_reaction(linear, self.user)
-                    await msg.remove_reaction(linear, self.bot.user)
-
-                elif react.emoji == log:
-                    logger.info(f'Log graph used for {provst} {location}')
-                    filename = './graphs/loggraph.png'
-
-                    if location == 'All':
+                    elif graph_type == 'log':
                         ax = self.confirmed_df.iloc[:,4:].sum().plot(label='Confirmed', logy=True, color='orange', marker='o')
                         ax = self.recovered_df.iloc[:,4:].sum().plot(label='Recovered', logy=True, color='lightgreen', marker='o')
-                    elif location == 'Other':
+                elif location == 'Other':
+                    if graph_type == 'linear':
+                        ax = self.confirmed_df[~self.confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                        ax = self.recovered_df[~self.recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                    elif graph_type == 'log':
                         ax = self.confirmed_df[~self.confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Confirmed', logy=True, color='orange', marker='o')
                         ax = self.recovered_df[~self.recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,4:].sum().plot(label='Recovered', logy=True, color='lightgreen', marker='o')
-
-                    else:
-                        if provst:
-                            if self.confirmed_df['Province/State'].str.match(provst).any():
-                                if provst in states:
-                                    states_abr = dict((v,k) for k,v in states.items())[provst]
+                else:
+                    if provst:
+                        if self.confirmed_df['Province/State'].str.contains(provst).any():
+                            if provst in states:
+                                if graph_type == 'linear':
+                                    ax = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(f'{provst}|{states_abr}', na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                                    ax = self.recovered_df[self.recovered_df['Province/State'].str.contains(f'{provst}|{states_abr}', na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                                elif graph_type == 'log':
                                     ax = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(f'{provst}|{states_abr}', na=False)].iloc[:,4:].sum().plot(label='Confirmed', logy=True, color='orange', marker='o')
                                     ax = self.recovered_df[self.recovered_df['Province/State'].str.contains(f'{provst}|{states_abr}', na=False)].iloc[:,4:].sum().plot(label='Recovered', logy=True, color='lightgreen', marker='o')
-                                else:
+                            else:
+                                if graph_type == 'linear':
+                                    ax = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                                    ax = self.recovered_df[self.recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                                elif graph_type == 'log':
                                     ax = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Confirmed', logy=True, color='orange', marker='o')
                                     ax = self.recovered_df[self.recovered_df['Province/State'].str.contains(provst, na=False)].iloc[:,4:].sum().plot(label='Recovered', logy=True, color='lightgreen', marker='o')
-                            else:
-                                await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
-                                return
                         else:
-                            ax = self.confirmed_df[self.confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed', logy=True, color='orange', marker='o')
-                            ax = self.recovered_df[self.recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,4:].sum().plot(label='Recovered', logy=True, color='lightgreen', marker='o')
+                            await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
+                            return
+                    else:
+                        if graph_type == 'linear':
+                            ax = self.confirmed_df[self.confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
+                            ax = self.recovered_df[self.recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
+                        elif graph_type == 'log':
+                            ax = self.confirmed_df[self.confirmed_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Confirmed', logy=True, color='orange', marker='o')
+                            ax = self.recovered_df[self.recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,4:].sum().plot(label='Recovered', logy=True, color='lightgreen', marker='o')
 
+                if graph_type == 'linear':
+                    filename = './graphs/lineargraph.png'
+                    ax.set_ylim(0)
+                    plt.title('Linear Graph')
+
+                elif graph_type == 'log':
+                    filename = './graphs/loggraph.png'
                     ax.set_ylim(10**2)
                     plt.title('Logarithmic Graph')
                     plt.minorticks_off()
-                    await msg.remove_reaction(log, self.user)
-                    await msg.remove_reaction(log, self.bot.user)
+
                 #Graph
-                fig.autofmt_xdate()
+                ax.legend(loc='upper left', fancybox=True, facecolor='0.2')
                 ax.yaxis.grid()
                 ax.spines['top'].set_visible(False)
                 ax.spines['right'].set_visible(False)
                 ax.spines['left'].set_visible(False)
-
-                ax.legend(loc='upper left', fancybox=True, facecolor='0.2')
                 locs, _ = plt.yticks()
                 ylabels = []
                 for l in locs:
@@ -268,15 +251,42 @@ class Stats(commands.Cog):
                         lab = '{:,}'.format(int(lab))
                     ylabels.append(lab)
                 plt.yticks(locs, ylabels)
-
                 plt.savefig(filename, transparent=True)
+                plt.cla()
+                plt.close(fig)
                 plt.close('all')
+                gc.collect()
                 with open(filename, 'rb') as f:
                     file = io.BytesIO(f.read())
-                image = discord.File(file, filename='graph.png')
-                embed.set_image(url=f'attachment://graph.png')
-                await msg.delete()
-                await ctx.send(file=image, embed=embed)
+                image = discord.File(file, filename=f'{graph_type}graph.png')
+
+                return image
+
+            for graph in graphs:
+                await msg.add_reaction(graph)
+
+            while True:
+                react, self.user = await self.bot.wait_for('reaction_add', check=predicate(msg), timeout=60)
+                graph_type = ''
+                if react.emoji == linear:
+                    logger.info(f'Linear graph used for {provst} {location}')
+                    graph_type = 'linear'
+                    await msg.remove_reaction(linear, self.user)
+                    await msg.remove_reaction(linear, self.bot.user)
+                    image = await plot(graph_type)
+                    embed.set_image(url=f'attachment://{graph_type}graph.png')
+                    await msg.delete()
+                    await ctx.send(file=image, embed=embed)
+
+                elif react.emoji == log:
+                    logger.info(f'Log graph used for {provst} {location}')
+                    graph_type = 'log'
+                    await msg.remove_reaction(log, self.user)
+                    await msg.remove_reaction(log, self.bot.user)
+                    image = await plot(graph_type)
+                    embed.set_image(url=f'attachment://{graph_type}graph.png')
+                    await msg.delete()
+                    await ctx.send(file=image, embed=embed)
 
         else:
             await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
