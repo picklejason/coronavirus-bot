@@ -1,13 +1,9 @@
 import discord
 import praw
-import os
 import asyncio
-import logging
 import config
 from datetime import datetime
 from discord.ext import commands
-
-logger = logging.getLogger('covid-19')
 
 class Reddit(commands.Cog):
 
@@ -16,9 +12,7 @@ class Reddit(commands.Cog):
 
     red = praw.Reddit(client_id=config.redditID,
                     client_secret=config.redditSecret,
-                    password=config.redditPW,
-                    user_agent=config.user_agent,
-                    username=config.redditName)
+                    user_agent=config.user_agent)
 
     #Reddit Command | Returns 5 posts (Hot, New, Top) from the subreddit r/Coronavirus
     @commands.command()
@@ -46,7 +40,7 @@ class Reddit(commands.Cog):
 
         index = 1
 
-        description = f'{icon[category]} | Bot needs permission to **manage messages** to flip pages'
+        description = f'{icon[category]} {category} Posts'
         timestamp = datetime.utcnow()
         url = 'https://www.reddit.com/r/Coronavirus/'
         embed = discord.Embed(title='/r/Coronavirus', description=description, colour=discord.Colour.red(), timestamp=timestamp, url=url)
@@ -57,7 +51,6 @@ class Reddit(commands.Cog):
         embed.set_thumbnail(url='https://styles.redditmedia.com/t5_2x4yx/styles/communityIcon_ex5aikhvi3i41.png')
         embed.set_footer(text=f'Requested by {ctx.message.author} • Page {index} of 10', icon_url=ctx.message.author.avatar_url)
         msg = await ctx.send(embed=embed)
-        logger.info('Reddit command used')
 
         def predicate(message, l, r):
             def check(reaction, user):
@@ -78,10 +71,8 @@ class Reddit(commands.Cog):
             try:
                 react, self.user = await self.bot.wait_for('reaction_add', check=predicate(msg, l, r), timeout=300)
             except asyncio.TimeoutError:
-                try:
-                    await msg.delete()
-                except:
-                    pass
+                await msg.delete()
+
             if react.emoji == left and index > 1:
                 index -= 1
                 await msg.remove_reaction(left, self.user)

@@ -1,13 +1,10 @@
 import discord
 import io
-import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import logging
 import gc
-from discord import File
 from discord.ext import commands
-from datetime import datetime
 from utils.codes import states, alt_names, alpha2, alpha3
 
 logger = logging.getLogger('covid-19')
@@ -25,16 +22,16 @@ class Stats(commands.Cog):
     deaths_df = pd.read_csv(deaths_url, error_bad_lines=False).dropna(axis=1, how='all')
     recovered_df = pd.read_csv(recovered_url, error_bad_lines=False).dropna(axis=1, how='all')
 
-    #Statistics Command | Provides Confirmed, Deaths, and Recovered | Mortality Rate: Deaths/Confirmed | Includes Graph
+    #Statistics Command
     @commands.command(name='stat', aliases=['stats', 'statistic', 's', 'cases'])
     @commands.cooldown(3, 10, commands.BucketType.user)
     async def stat(self, ctx, location = 'All', provst = ''):
 
+        #Parameter formatting | Check if country code
         if len(location) == 2 or len(location) == 3:
             location = location.upper()
         else:
             location = location.title()
-
         if len(provst) == 2:
             provst = provst.upper()
         else:
@@ -53,9 +50,9 @@ class Stats(commands.Cog):
         #Check if data exists for location
         if location == 'ALL' or location == 'Other' or self.confirmed_df['Country/Region'].str.contains(location).any():
 
+            #Date of most recent data
             updated = list(self.confirmed_df)[-1]
-
-            #Parse Data
+            #Parse and sum data
             if location == 'ALL':
                 confirmed = self.confirmed_df.iloc[:,-1].sum()
                 prev_confirmed = self.confirmed_df.iloc[:,-2].sum()
@@ -92,7 +89,7 @@ class Stats(commands.Cog):
                     recovered = self.recovered_df[self.recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,-1].sum()
                     prev_recovered = self.recovered_df[self.recovered_df['Country/Region'].str.contains(location, na=False)].iloc[:,-2].sum()
 
-            #Check if change is postive | adds "+" before change
+            #Daily case change formatting
             change_confirmed = confirmed - prev_confirmed
             if (change_confirmed > 0):
                 change_confirmed = f'(+{int(change_confirmed)})'
@@ -114,6 +111,7 @@ class Stats(commands.Cog):
             active_cases = int(confirmed - deaths - recovered)
             prev_active_cases = int(prev_confirmed - prev_deaths - prev_recovered)
             change_active_cases = active_cases - prev_active_cases
+
             if change_active_cases > 0:
                 change_active_cases = f'(+{change_active_cases})'
             elif change_active_cases < 0:
@@ -148,23 +146,26 @@ class Stats(commands.Cog):
                 change_mortality_rate = ''
                 change_recovery_rate = ''
 
-            description='•Stats update **daily** around 23:59 (UTC) | May slightly differ from other sources \n •React with 📈 for a linear graph or 📉 for a log graph (within 60s) \n •Please vote for me on [TOP.GG](https://top.gg/bot/683462722368700526/vote) <:dbl:689485017667469327>'
+            if len(provst) > 0:
+                name =  f'Coronavirus (COVID-19) Cases | {provst}, {location}'
+            else:
+                name = f'Coronavirus (COVID-19) Cases | {location}'
+            description='**Vote** for me on <:dbl:689485017667469327> [TOP.GG](https://top.gg/bot/683462722368700526/vote) | **Support** me on <:Kofi:689483361785217299> [Ko-fi](https://ko-fi.com/picklejason) \n React with 📈 for a **linear** graph or 📉 for a **log** graph'
             embed = discord.Embed(
-                title=f'Coronavirus (COVID-19) Cases  | {provst} {location} ',
                 description=description,
                 colour=discord.Colour.red()
-            )
-
+                )
+            embed.set_author(name=name, url='https://github.com/CSSEGISandData/COVID-19', icon_url='https://images.discordapp.net/avatars/683462722368700526/70c1743a2d87a44116f857a88bb107e0.png?size=512')
             embed.add_field(name='<:confirmed:689494326493184090> Confirmed', value= f'**{int(confirmed)}** {change_confirmed}')
             embed.add_field(name='<:deaths:689489690101153800> Deaths', value=f'**{int(deaths)}** {change_deaths}')
             embed.add_field(name='<:recovered:689490988808274003> Recovered', value=f'**{int(recovered)}** {change_recovered}')
             embed.add_field(name='<:activecases:689494177733410861> Active Cases', value=f'**{active_cases}** {change_active_cases}')
             embed.add_field(name='<:mortalityrate:689488380865544345> Mortality Rate', value=f'**{mortality_rate}%** {change_mortality_rate}')
             embed.add_field(name='<:recoveryrate:689492820125417521> Recovery Rate', value=f'**{recovery_rate}%** {change_recovery_rate}')
-            embed.set_footer(text= f'Updated {updated} | Support me at https://ko-fi.com/picklejason')
-            # logger.info(f'Stat command used for {provst} {location} by {ctx.message.author}({ctx.message.author.id}) in {ctx.message.guild}({ctx.message.guild.id})')
+            embed.set_footer(text= f'Updated {updated} | Stats update daily around 23:59 (UTC)')
             msg = await ctx.send(embed=embed)
 
+            #Graph reactions
             linear = '📈'
             log = '📉'
             graphs = [linear, log]
@@ -179,6 +180,7 @@ class Stats(commands.Cog):
                     return False
                 return check
 
+            #Plot graph function
             async def plot(graph_type):
 
                 fig = plt.figure(dpi=150)
@@ -202,6 +204,7 @@ class Stats(commands.Cog):
                     if provst:
                         if self.confirmed_df['Province/State'].str.contains(provst).any():
                             if provst in states:
+                                states_abr = dict((v,k) for k,v in states.items())[provst]
                                 if graph_type == 'linear':
                                     ax = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(f'{provst}|{states_abr}', na=False)].iloc[:,4:].sum().plot(label='Confirmed', color='orange', marker='o')
                                     ax = self.recovered_df[self.recovered_df['Province/State'].str.contains(f'{provst}|{states_abr}', na=False)].iloc[:,4:].sum().plot(label='Recovered', color='lightgreen', marker='o')
@@ -237,7 +240,6 @@ class Stats(commands.Cog):
                     plt.title('Logarithmic Graph')
                     plt.minorticks_off()
 
-                #Graph
                 ax.legend(loc='upper left', fancybox=True, facecolor='0.2')
                 ax.yaxis.grid()
                 ax.spines['top'].set_visible(False)

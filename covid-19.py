@@ -1,12 +1,10 @@
 import discord
 import os
-import sys
 import config
 import asyncio
 import logging
 import google.cloud.logging
 from google.cloud.logging.handlers import CloudLoggingHandler
-from discord import File
 from discord.utils import find
 from discord.ext import commands
 from discord.ext.commands import when_mentioned_or
@@ -58,7 +56,6 @@ class Coronavirus(commands.AutoShardedBot):
         channel = bot.get_channel(686768403339542687)
         embed_join = discord.Embed(description=f'Joined server **{guild.name}** with **{len(guild.members)}** members | Total: **{len(self.guilds)}** servers', timestamp=datetime.utcnow(), colour=discord.Colour.green())
         await channel.send(embed=embed_join)
-        # logger.info(f'Joined **{guild.name}** | Currently on **{len(self.guilds)}** servers')
         if general and general.permissions_for(guild.me).send_messages:
             embed = discord.Embed(
                     title='Coronavirus (COVID-19) Discord Bot',
