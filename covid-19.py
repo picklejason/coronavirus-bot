@@ -49,7 +49,10 @@ class Coronavirus(commands.AutoShardedBot):
         await self.wait_until_ready()
         while True:
             await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{len(bot.guilds)} servers | .c help'))
-            await asyncio.sleep(120)
+            self.unload_extension('cogs.Stats')
+            self.load_extension('cogs.Stats')
+            logger.info('Stats reloaded')
+            await asyncio.sleep(600)
 
     async def on_guild_join(self, guild: discord.Guild):
         general = find(lambda x: x.name == 'general', guild.text_channels)
