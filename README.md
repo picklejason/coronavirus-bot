@@ -6,9 +6,9 @@
 
 This is a Discord bot coded in Python with [discord.py](https://discordpy.readthedocs.io/en/latest/) for providing info on the novel coronavirus (COVID-19) by [picklejason](https://github.com/picklejason).
 
-Current features include stats showing total confirmed, deaths, and recovered cases. A graph is also displayed showing confirmed and recovered cases from late January to current day. In addition, the bot also can retrieve posts from the subreddit [r/Coronavirus](https://www.reddit.com/r/Coronavirus/).
+Current features include stats showing total confirmed, deaths, and recovered cases. A graph (linear or log) is also displayed showing confirmed cases and deaths from late January to current day. In addition, the bot also can retrieve posts from the subreddit [r/Coronavirus](https://www.reddit.com/r/Coronavirus/).
 
-Data for the stats and graph are from the [data repository](https://github.com/CSSEGISandData/COVID-19) by Johns Hopkins CSSE
+Data for the stats and graph are from [Worldometer](https://www.worldometers.info/coronavirus/) and [Johns Hopkins CSSE](https://github.com/CSSEGISandData/COVID-19)
 
 ## Usage
 
@@ -18,27 +18,24 @@ Data for the stats and graph are from the [data repository](https://github.com/C
 
 * Use the `help` command for further info
 
-## Video Demo
-[![](https://i.gyazo.com/47b1375bfd3dae7293bac6b4753b3fb8.png)](https://youtu.be/AScAFxgtffc)
-
 ### Features
 
-* `.c stat "all"` Stats of all locations
+* React with :chart_with_upwards_trend: for a linear graph or :chart_with_downwards_trend: for a log graph
 
-* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/bf6f81c889907d377b379d23ce8c189f.png" height="430" width="350"/>
+* `.c stat all` Stats of all locations
 
-* `.c stat "other"` Stats of locations other than China
+* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/8185b791eb2591904f6af75f420f64c8.png" height="220" width="350"/>
 
-* <img align="center" style="float: center; margin: 0 10px 0 0;" src="https://i.gyazo.com/67f03554bcd64c94c7421f5fb0ba3df8.png" height="430" width="350"/>
+* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/0d7175e78a006acb189f6c900d0799ca.png" height="430" width="350"/>
 
-* `.c stat "country name"` Stats of a specific country
+* `.c stat <country name>` Stats of a specific country
 
-* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/ac90ddaef279d480c13b23aacc2bc727.png" height="430" width="350"/>
+* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/45274a293bb7d422973e6b721007a440.png" height="430" width="350"/>
 
-* `.c stat "country name" "province/state"` Stats of a province/state of a country
+* `.c stat <US> <state>` Stats of a specific state in the United States
 
-* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/fea71dcae84e4e8efea13e841d987f0f.png" height="430" width="350"/>
+* <img align="center" style="float: centrer; margin: 0 10px 0 0;" src="https://i.gyazo.com/b736a91e0143211f1f2c38e94ecf282c.png" height="220" width="350"/>
 
 * `.c reddit [category]` Reddit posts from [r/Coronavirus](https://www.reddit.com/r/Coronavirus/) | category = `Hot` `New` `Top` | Use ⬅️ and ➡️ to scroll through
 
-* <img align="center" style="float: center; margin: 0 10px 0 0;" src="https://i.gyazo.com/03649858963207b25cee3db8fede2154.png" height="430" width="420"/>
+* <img align="center" style="float: center; margin: 0 10px 0 0;" src="https://i.gyazo.com/a73893390e70b71e12f345cfca635c52.png" height="450" width="520"/>
