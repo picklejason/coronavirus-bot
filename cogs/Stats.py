@@ -7,9 +7,10 @@ import matplotlib.pyplot as plt
 import logging
 import asyncio
 import gc
+import requests
 from datetime import datetime
 from discord.ext import commands
-from utils.codes import states, alt_names, alpha2, alpha3
+from utils.codes import states, alt_names, alpha2, alpha3, JHU_names
 
 logger = logging.getLogger('covid-19')
 
@@ -26,10 +27,20 @@ class Stats(commands.Cog):
     deaths_df = pd.read_csv(deaths_url, error_bad_lines=False).dropna(axis=1, how='all')
     recovered_df = pd.read_csv(recovered_url, error_bad_lines=False).dropna(axis=1, how='all')
 
-    df_list = pd.read_html('https://www.worldometers.info/coronavirus/')
-    us_df_list = pd.read_html('https://www.worldometers.info/coronavirus/country/us/')
+    header = {
+      "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.75 Safari/537.36",
+      "X-Requested-With": "XMLHttpRequest"
+    }
+
+    wom_url = 'https://www.worldometers.info/coronavirus/'
+    us_wom_url = 'https://www.worldometers.info/coronavirus/country/us/'
+    r = requests.get(wom_url, headers=header)
+    r1 = requests.get(us_wom_url, headers=header)
+
+    df_list = pd.read_html(r.text)
+    us_df_list = pd.read_html(r1.text)
     df = df_list[0].replace(np.nan, 0).replace(',', '', regex=True)
-    us_df = us_df_list[0].replace(np.nan, 0)
+    us_df = us_df_list[0].replace(np.nan, 0).replace(',', '', regex=True)
 
     def getTotal(self, type):
         df_all = self.df[self.df['Country,Other'].str.match('Total:', na=False)][type].values[0]
@@ -89,9 +100,17 @@ class Stats(commands.Cog):
                         deaths = self.getState(state, 'TotalDeaths')
                         new_deaths = self.getState(state, 'NewDeaths')
                         active = self.getState(state, 'ActiveCases')
+                    elif location == 'Canada':
+                        confirmed = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(state, na=False)].iloc[:,-1].sum()
+                        prev_confirmed = self.confirmed_df[self.confirmed_df['Province/State'].str.contains(state, na=False)].iloc[:,-2].sum()
+                        deaths = self.deaths_df[self.deaths_df['Province/State'].str.contains(state, na=False)].iloc[:,-1].sum()
+                        prev_deaths = self.deaths_df[self.deaths_df['Province/State'].str.contains(state, na=False)].iloc[:,-2].sum()
+                        recovered = self.recovered_df[self.recovered_df['Province/State'].str.contains(state, na=False)].iloc[:,-1].sum()
+                        active = confirmed - deaths - recovered
+                        new_confirmed = confirmed - prev_confirmed
+                        new_deaths = deaths - prev_deaths
                     else:
                         await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
-
                 else:
                     confirmed = self.getLocation(location, 'TotalCases')
                     new_confirmed = self.getLocation(location, 'NewCases')
@@ -123,9 +142,9 @@ class Stats(commands.Cog):
                     recovery_rate = round((recovered/confirmed * 100), 2)
 
             if state:
-                description='**Vote** for me on <:dbl:689485017667469327> [TOP.GG](https://top.gg/bot/683462722368700526/vote) | **Support** me on <:Kofi:689483361785217299> [Ko-fi](https://ko-fi.com/picklejason)'
+                description='**Vote** <:dbl:689485017667469327> [TOP.GG](https://top.gg/bot/683462722368700526/vote) | **Donate** <:Kofi:689483361785217299> [Ko-fi](https://ko-fi.com/picklejason) | **Join** <:discord:689486285349715995> [Support Server](https://discord.gg/tVN2UTa)'
             else:
-                description='**Vote** for me on <:dbl:689485017667469327> [TOP.GG](https://top.gg/bot/683462722368700526/vote) | **Support** me on <:Kofi:689483361785217299> [Ko-fi](https://ko-fi.com/picklejason) \n React with 📈 for a **linear** graph or 📉 for a **log** graph'
+                description='**Vote** <:dbl:689485017667469327> [TOP.GG](https://top.gg/bot/683462722368700526/vote) | **Donate** <:Kofi:689483361785217299> [Ko-fi](https://ko-fi.com/picklejason) | **Join** <:discord:689486285349715995> [Support Server](https://discord.gg/tVN2UTa) \n React with 📈 for a **linear** graph or 📉 for a **log** graph'
             embed = discord.Embed(
                 description=description,
                 colour=discord.Colour.red(),
@@ -137,6 +156,7 @@ class Stats(commands.Cog):
                 embed.set_author(name=name, url='https://www.worldometers.info/coronavirus/country/us/', icon_url='https://images.discordapp.net/avatars/683462722368700526/70c1743a2d87a44116f857a88bb107e0.png?size=512')
                 embed.add_field(name='<:activecases:689494177733410861> Active Cases', value=f'**{int(active)}**')
                 embed.add_field(name='<:mortalityrate:689488380865544345> Mortality Rate', value=f'**{mortality_rate}%**')
+
             else:
                 embed.set_author(name=name, url='https://www.worldometers.info/coronavirus/', icon_url='https://images.discordapp.net/avatars/683462722368700526/70c1743a2d87a44116f857a88bb107e0.png?size=512')
                 embed.add_field(name='<:recovered:689490988808274003> Recovered', value=f'**{int(recovered)}**')
@@ -145,13 +165,6 @@ class Stats(commands.Cog):
                 embed.add_field(name='<:recoveryrate:689492820125417521> Recovery Rate', value=f'**{recovery_rate}%**')
             embed.set_footer(text='Data from Worldometer and Johns Hopkins CSSE')
             msg = await ctx.send(embed=embed)
-
-            if location == 'USA':
-                location = 'US'
-            elif location == 'S. Korea':
-                location = 'Korea, South'
-            elif location == 'UK':
-                location = 'United Kingdom'
 
             #Graph reactions
             linear = '📈'
@@ -167,6 +180,9 @@ class Stats(commands.Cog):
                         return True
                     return False
                 return check
+
+            if location in JHU_names:
+                location = JHU_names[location]
 
             #Plot graph function
             async def plot(graph_type):
@@ -237,9 +253,9 @@ class Stats(commands.Cog):
 
             while True:
                 try:
-                    react, self.user = await self.bot.wait_for('reaction_add', check=predicate(msg), timeout=45)
+                    react, self.user = await self.bot.wait_for('reaction_add', check=predicate(msg), timeout=30)
                 except asyncio.TimeoutError:
-                    description='**Vote** for me on <:dbl:689485017667469327> [TOP.GG](https://top.gg/bot/683462722368700526/vote) | **Support** me on <:Kofi:689483361785217299> [Ko-fi](https://ko-fi.com/picklejason)'
+                    description='**Vote** <:dbl:689485017667469327> [TOP.GG](https://top.gg/bot/683462722368700526/vote) | **Donate** <:Kofi:689483361785217299> [Ko-fi](https://ko-fi.com/picklejason) | **Join** <:discord:689486285349715995> [Support Server](https://discord.gg/tVN2UTa)'
                     embed = discord.Embed(
                         description=description,
                         colour=discord.Colour.red(),
@@ -253,14 +269,12 @@ class Stats(commands.Cog):
                     embed.add_field(name='<:mortalityrate:689488380865544345> Mortality Rate', value=f'**{mortality_rate}%**')
                     embed.add_field(name='<:recoveryrate:689492820125417521> Recovery Rate', value=f'**{recovery_rate}%**')
                     embed.set_footer(text='Data from Worldometer and Johns Hopkins CSSE')
-                    #embed.set_footer(text='Join the support server with \".c support\"')
                     await msg.edit(embed=embed)
                     await msg.remove_reaction(linear, self.bot.user)
                     await msg.remove_reaction(log, self.bot.user)
 
                 graph_type = ''
                 if react.emoji == linear:
-                    logger.info(f'Linear graph used for {state} {location}')
                     graph_type = 'linear'
                     await msg.remove_reaction(linear, self.user)
                     await msg.remove_reaction(linear, self.bot.user)
@@ -270,7 +284,6 @@ class Stats(commands.Cog):
                     await ctx.send(file=image, embed=embed)
 
                 elif react.emoji == log:
-                    logger.info(f'Log graph used for {state} {location}')
                     graph_type = 'log'
                     await msg.remove_reaction(log, self.user)
                     await msg.remove_reaction(log, self.bot.user)
@@ -286,6 +299,145 @@ class Stats(commands.Cog):
 
         else:
             await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
+
+    @commands.command()
+    @commands.cooldown(3, 10, commands.BucketType.user)
+    async def graph(self, ctx, graph_type, type, *location):
+
+        countries = []
+        #Parameter formatting | Check if country code
+        for country in location:
+            if len(country) == 2 or len(country) == 3:
+                country = country.upper()
+            else:
+                country = country.title()
+
+            if country in alpha2:
+                country = alpha2[country]
+            elif country in alpha3:
+                country = alpha3[country]
+            elif country in alt_names:
+                country = alt_names[country]
+
+            if country in JHU_names:
+                country = JHU_names[country]
+
+            countries.append(country)
+
+        fig = plt.figure(dpi=150)
+        plt.style.use('dark_background')
+
+        for country in countries:
+            if country in list(alpha2.values()) or country in list(JHU_names.values()):
+                if graph_type == 'linear':
+                    if type == 'confirmed':
+                        ax = self.confirmed_df[self.confirmed_df['Country/Region'].str.contains(country, na=False)].iloc[:,4:].sum().plot(label=country)
+                    elif type == 'recovered':
+                        ax = self.recovered_df[self.recovered_df['Country/Region'].str.contains(country, na=False)].iloc[:,4:].sum().plot(label=country)
+                    elif type == 'deaths':
+                        ax = self.deaths_df[self.deaths_df['Country/Region'].str.contains(country, na=False)].iloc[:,4:].sum().plot(label=country)
+
+                elif graph_type == 'log':
+                    if type == 'confirmed':
+                        ax = self.confirmed_df[self.confirmed_df['Country/Region'].str.contains(country, na=False)].iloc[:,4:].sum().plot(label=country, logy=True)
+                    elif type == 'recovered':
+                        ax = self.recovered_df[self.recovered_df['Country/Region'].str.contains(country, na=False)].iloc[:,4:].sum().plot(label=country, logy=True)
+                    elif type == 'deaths':
+                        ax = self.deaths_df[self.deaths_df['Country/Region'].str.contains(country, na=False)].iloc[:,4:].sum().plot(label=country, logy=True)
+            else:
+                await ctx.send(f'{country} is not a valid location', delete_after=3)
+
+        if graph_type == 'linear':
+            filename = './graphs/lineargraph.png'
+            ax.set_ylim(0)
+            plt.title(f'{type.title()} Linear Graph')
+
+        elif graph_type == 'log':
+            filename = './graphs/loggraph.png'
+            ax.set_ylim(10**2)
+            plt.title(f'{type.title()} Logarithmic Graph')
+            plt.minorticks_off()
+
+        ax.legend(loc='upper left', fancybox=True, facecolor='0.2')
+        ax.yaxis.grid()
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        locs, _ = plt.yticks()
+        ylabels = []
+        for l in locs:
+            lab = str(int(l)).replace('00000000', '00M').replace('0000000', '0M').replace('000000', 'M').replace('00000', '00K').replace('0000', '0K').replace('000', 'K')
+            if not ('K' in lab or 'M' in lab):
+                lab = '{:,}'.format(int(lab))
+            ylabels.append(lab)
+        plt.yticks(locs, ylabels)
+        plt.savefig(filename, transparent=True)
+        plt.cla()
+        plt.close(fig)
+        plt.close('all')
+        gc.collect()
+        with open(filename, 'rb') as f:
+            file = io.BytesIO(f.read())
+        image = discord.File(file, filename=f'{graph_type}graph.png')
+        # description='**Vote** <:dbl:689485017667469327> [TOP.GG](https://top.gg/bot/683462722368700526/vote) | **Donate** <:Kofi:689483361785217299> [Ko-fi](https://ko-fi.com/picklejason) | **Join** <:discord:689486285349715995> [Support Server](https://discord.gg/tVN2UTa)'
+        embed = discord.Embed(
+            # description=description,
+            colour=discord.Colour.red(),
+            timestamp=datetime.utcnow()
+            )
+
+        embed.set_image(url=f'attachment://{graph_type}graph.png')
+        embed.set_footer(text=f'Requested by {ctx.message.author}', icon_url=ctx.message.author.avatar_url)
+        await ctx.send(file=image, embed=embed)
+
+        if os.path.exists(f'./graphs/{graph_type}graph.png'):
+            os.remove(f'./graphs/{graph_type}graph.png')
+        else:
+            pass
+
+    @commands.command()
+    @commands.cooldown(3, 10, commands.BucketType.user)
+    async def vcset(self, ctx, channel: discord.VoiceChannel, *, location = 'All', state = ''):
+
+        if len(location) == 2:
+            location = location.upper()
+        else:
+            location = location.title()
+        if len(state) == 2:
+            state = state.upper()
+        else:
+            state = state.title()
+        if location in alpha2:
+            location = alpha2[location]
+        elif location in alpha3:
+            location = alpha3[location]
+        elif location in alt_names:
+            location = alt_names[location]
+        if state in states:
+            state = states[state]
+
+        while True:
+            #Check if data exists for location
+            if location == 'All' or location == 'Other' or self.confirmed_df['Country/Region'].str.contains(location).any():
+                #Parse Data
+                if location == 'All':
+                    confirmed = self.confirmed_df.iloc[:,-1].sum()
+                    deaths = self.deaths_df.iloc[:,-1].sum()
+                    # recovered = self.recovered_df.iloc[:,-1].sum()
+                elif location == 'Other':
+                    confirmed = self.confirmed_df[~self.confirmed_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+                    deaths = self.deaths_df[~self.deaths_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+                    # recovered = self.recovered_df[~self.recovered_df['Country/Region'].str.contains('China', na=False)].iloc[:,-1].sum()
+                else:
+                    confirmed = self.confirmed_df[self.confirmed_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
+                    deaths = self.deaths_df[self.deaths_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
+                    # recovered = self.recovered_df[self.recovered_df['Country/Region'].str.match(location, na=False)].iloc[:,-1].sum()
+            else:
+                await ctx.send('There is no available data for this location | Use **.c help** for more info on commands')
+
+            await channel.edit(name=f'😷 {location}: {str(confirmed)}')
+
+            await asyncio.sleep(86400)
 
 def setup(bot):
     bot.add_cog(Stats(bot))

@@ -26,7 +26,8 @@ class Help(commands.Cog):
             colour=discord.Colour.red(),
             timestamp=datetime.utcnow()
             )
-        embed.add_field(name='```.c stat <country/all> <state>```', value='Show **Confirmed** (new cases), **Deaths** (new deaths), and **Recovered** \n React with 📈 for a linear graph or 📉 for a log graph \n **<country>** - Country stats | **<all>** - Global stats \n •For any country you may type the **full name** or **[ISO 3166-1 codes](https://en.wikipedia.org/wiki/ISO_3166-1)** \n __Example:__ **.c stat Italy** | **.c stat IT** | **.c stat ITA** \n •If the country or state\'s full name is two words, enclose them in **quotation marks** \n __Example:__ **.c stat "South Korea"** | **.c stat US "New York"** \n •If you would like stats on a specific **state (full name or abbreviated)** in the US, put it after the country name \n __Example:__ **.c stat US California** or **.c stat US CA**', inline=False)
+        embed.add_field(name='```.c stat <country/all> <state>```', value='Show **Confirmed** (new cases), **Deaths** (new deaths), and **Recovered** \n React with 📈 for a linear graph or 📉 for a log graph \n •For any country you may type the **full name** or **[ISO 3166-1 codes](https://en.wikipedia.org/wiki/ISO_3166-1)** \n __Example:__ **.c stat Italy** | **.c stat IT** | **.c stat ITA** \n •If the country or state\'s full name is two words, enclose them in **quotation marks** \n __Example:__ **.c stat "South Korea"** | **.c stat US "New York"** \n •If you would like stats on a specific **state (full name or abbreviated)** in the US, put it after the country name \n __Example:__ **.c stat US California** or **.c stat US CA**', inline=False)
+        embed.add_field(name='```.c graph <linear/log> <confirmed/recovered/deaths> <country names>```', value='Display graph for a single country or multiple countries, choose between graph type and case type | Same rules for country names apply \n __Example:__ **.c graph log deaths nl deu ita usa chn kor jpn esp**')
         embed.add_field(name='```.c reddit <category>```', value='Return posts of given category from [r/Coronavirus](https://www.reddit.com/r/Coronavirus/) \n Shows 5 posts at a time (up to first 15) Use ⬅️ and ➡️ to scroll through \n **<category>** - `Hot` | `New` | `Top`', inline=False)
         embed.add_field(name='```.c info```', value='Return additional info about the bot such as server and user count', inline=False)
         embed.add_field(name='```.c support```', value='Return invite link to support server', inline=False)
@@ -78,7 +79,7 @@ class Help(commands.Cog):
         '''Triggers when wrong command or is inputted'''
         if isinstance(error, commands.CommandNotFound):
             message = ctx.message.content
-            # logger.info(f'Invalid command use \"{message}\"')
+            logger.info(f'Invalid command use \"{message}\"')
         elif isinstance(error, commands.CommandOnCooldown):
             message = 'To prevent spam, the command has been rate limited to 3 times every 10 seconds'
             logger.info(f'Rate limit reached by {ctx.message.author}({ctx.message.author.id}) in {ctx.message.guild}({ctx.message.guild.id})')
@@ -86,11 +87,15 @@ class Help(commands.Cog):
 
     @commands.command(name='reload', aliases=['r'])
     @commands.is_owner()
-    async def reload(self, ctx):
-        self.bot.unload()
-        self.bot.load()
-        logger.info('Cogs Reloaded')
-        await ctx.send('Cogs Reloaded')
+    async def reload(self, ctx, extension=None):
+        if extension is None:
+            self.bot.unload()
+            self.bot.load()
+            await ctx.send('Reloaded All')
+        else:
+            self.bot.unload_extension(f'cogs.{extension.title()}')
+            self.bot.load_extension(f'cogs.{extension.title()}')
+            await ctx.send(f'Reloaded {extension.title()}')
 
 def setup(bot):
     bot.add_cog(Help(bot))

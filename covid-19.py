@@ -51,7 +51,7 @@ class Coronavirus(commands.AutoShardedBot):
             await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{len(bot.guilds)} servers | .c help'))
             self.unload_extension('cogs.Stats')
             self.load_extension('cogs.Stats')
-            logger.info('Stats reloaded')
+            logger.info('Reloaded Stats')
             await asyncio.sleep(600)
 
     async def on_guild_join(self, guild: discord.Guild):
@@ -61,11 +61,11 @@ class Coronavirus(commands.AutoShardedBot):
         await channel.send(embed=embed_join)
         if general and general.permissions_for(guild.me).send_messages:
             embed = discord.Embed(
-                    title='Coronavirus (COVID-19) Discord Bot',
-                    description='Thanks for inviting me! | Use **.c help** for more info on commands \n •Please vote for me on [TOP.GG](https://top.gg/bot/683462722368700526/vote) <:dbl:689485017667469327>',
+                    description='Thanks for inviting me! | Use **.c help** for more info on commands \n Please vote for me on <:dbl:689485017667469327> [TOP.GG](https://top.gg/bot/683462722368700526/vote) | Join the <:discord:689486285349715995> [Support Server](https://discord.gg/tVN2UTa)',
                     colour=discord.Colour.red()
                     )
-            embed.add_field(name='Command Prefix', value='`.c` or `@mention`')
+            embed.set_author(name='Coronavirus (COVID-19)', url='https://discord.gg/tVN2UTa', icon_url='https://images.discordapp.net/avatars/683462722368700526/70c1743a2d87a44116f857a88bb107e0.png?size=512')
+            embed.add_field(name='Command Prefix', value='`.c ` or `@mention`')
             users = 0
             for s in self.guilds:
                 users += len(s.members)
@@ -74,7 +74,7 @@ class Coronavirus(commands.AutoShardedBot):
             embed.add_field(name='Bot Source Code', value='<:github:689501322969350158> [Github](https://github.com/picklejason/coronavirus-bot)')
             embed.add_field(name='Bot Invite', value='<:discord:689486285349715995> [Link](https://discordapp.com/api/oauth2/authorize?client_id=683462722368700526&permissions=59456&scope=bot)')
             embed.add_field(name='Donate', value='<:Kofi:689483361785217299> [Ko-fi](https://ko-fi.com/picklejason)')
-            embed.set_footer(text='Made by PickleJason#5293 | Feel free to message me for any issues or suggestions')
+            embed.set_footer(text='Made by PickleJason#5293')
             await general.send(embed=embed)
 
     async def on_guild_remove(self, guild: discord.Guild):

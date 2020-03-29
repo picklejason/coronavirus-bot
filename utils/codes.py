@@ -242,7 +242,7 @@ alpha2 = {
 'QA': 'Qatar',
 'RE': 'Reunion',
 'RO': 'Romania',
-'RU': 'Russian Federation',
+'RU': 'Russia',
 'RW': 'Rwanda',
 'BL': 'St. Barth',
 'SH': 'Saint Helena, Ascension and Tristan da Cunha',
@@ -502,7 +502,7 @@ alpha3 = {
 'QAT': 'Qatar',
 'REU': 'Reunion',
 'ROU': 'Romania',
-'RUS': 'Russian Federation',
+'RUS': 'Russia',
 'RWA': 'Rwanda',
 'SAU': 'Saudi Arabia',
 'SDN': 'Sudan',
@@ -561,14 +561,20 @@ alpha3 = {
 'YEM': 'Yemen',
 'ZAF': 'South Africa',
 'ZMB': 'Zambia',
-'ZWE': 'Zimbabwe',
+'ZWE': 'Zimbabwe'
 }
 
 #Other names for countries
 alt_names = {
-        'Czech Republic': 'Czechia',
-        'UK': 'UK',
-        'South Korea': 'S. Korea',
-        'Korea': 'S. Korea',
-        'United States': 'USA'
+'Czech Republic': 'Czechia',
+'United Kingdom': 'UK',
+'South Korea': 'S. Korea',
+'Korea': 'S. Korea',
+'United States': 'USA'
+}
+
+JHU_names = {
+'USA': 'US',
+'S. Korea': 'Korea, South',
+'UK': 'United Kingdom'
 }
